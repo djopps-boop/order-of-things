@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPostBySlug } from "@/lib/posts";
+import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import Comments from "@/components/Comments";
+
+export function generateStaticParams() {
+  return getAllPosts()
+    .filter((p) => p.source === "native")
+    .map((p) => ({ slug: p.slug }));
+}
 
 export default async function PostPage({
   params,

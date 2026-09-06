@@ -1,6 +1,15 @@
 import FeedLayout from "@/components/FeedLayout";
 import FeedCard from "@/components/FeedCard";
-import { getPostsByMonth, MONTH_NAMES } from "@/lib/posts";
+import { getArchiveIndex, getPostsByMonth, MONTH_NAMES } from "@/lib/posts";
+
+export function generateStaticParams() {
+  return getArchiveIndex().flatMap((y) =>
+    y.months.map((m) => ({
+      year: String(m.year),
+      month: String(m.month).padStart(2, "0"),
+    }))
+  );
+}
 
 export default async function ArchiveMonthPage({
   params,

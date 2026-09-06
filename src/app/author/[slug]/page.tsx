@@ -1,7 +1,17 @@
 import FeedLayout from "@/components/FeedLayout";
 import FeedCard from "@/components/FeedCard";
-import { getPostsByAuthor } from "@/lib/posts";
+import { getAllPosts, getPostsByAuthor } from "@/lib/posts";
+import { newsletterSources } from "@/lib/sources";
 import { getAuthorProfile } from "@/lib/authors";
+
+// Static export needs every dynamic segment enumerated at build time.
+// Union of confirmed contributors (so profile pages exist even before they
+// have a post yet) and any author slug that already appears on a post.
+export function generateStaticParams() {
+  const slugs = new Set<string>(newsletterSources.map((s) => s.authorSlug));
+  for (const post of getAllPosts()) slugs.add(post.authorSlug);
+  return Array.from(slugs).map((slug) => ({ slug }));
+}
 
 export default async function AuthorArchivePage({
   params,

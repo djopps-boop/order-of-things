@@ -8,15 +8,15 @@ import Link from "next/link";
 // barrier against bad-faith actors, without taking on custom moderation
 // infrastructure ourselves.
 //
-// These four values are placeholders. Giscus requires a real, public GitHub
-// repo with Discussions enabled and the giscus app installed (Step 6 of the
-// build plan creates that repo). Once it exists, generate the real values at
-// https://giscus.app and swap them in here.
+// Real values, generated at https://giscus.app once Discussions was enabled
+// on djopps-boop/order-of-things and the giscus app was installed (scoped to
+// just this repo). "Announcements" is the discussion category so only
+// maintainers/giscus itself can start new discussion threads.
 const GISCUS_CONFIG = {
-  repo: "[github-owner]/[repo-name]",
-  repoId: "[REPO_ID_FROM_GISCUS_APP]",
-  category: "Comments",
-  categoryId: "[CATEGORY_ID_FROM_GISCUS_APP]",
+  repo: "djopps-boop/order-of-things",
+  repoId: "R_kgDOUQeJVA",
+  category: "Announcements",
+  categoryId: "DIC_kwDOUQeJVM4DFBv2",
 };
 
 export default function Comments() {

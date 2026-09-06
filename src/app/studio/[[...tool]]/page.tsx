@@ -1,19 +1,15 @@
-"use client";
+import StudioClient from "./StudioClient";
 
-// Loaded fully client-side (dynamic + ssr:false) rather than the more
-// common server-wrapper pattern. The Studio's dependencies (via the
-// "sanity" package) don't yet resolve cleanly under Next.js's newer
-// server/client module-condition rules when touched from a Server
-// Component — this sidesteps that by keeping the server out of the
-// picture entirely for this route.
-import dynamic from "next/dynamic";
-import config from "../../../../sanity.config";
-
-const NextStudio = dynamic(
-  () => import("next-sanity/studio").then((m) => m.NextStudio),
-  { ssr: false }
-);
+// Static export only needs the root /studio path prerendered — Sanity
+// Studio's own client-side router takes over from there once the shell has
+// loaded, so deep /studio/* paths aren't reachable via direct navigation on
+// a static host, only by clicking through the app itself. This route stays
+// a plain server component so it can export generateStaticParams; the
+// actual Studio UI lives in the client-only StudioClient component.
+export function generateStaticParams() {
+  return [{ tool: [] }];
+}
 
 export default function StudioPage() {
-  return <NextStudio config={config} />;
+  return <StudioClient />;
 }

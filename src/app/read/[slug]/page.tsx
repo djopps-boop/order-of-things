@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAggregatedPostBySlug } from "@/lib/posts";
+import { getAggregatedPostBySlug, getAllPosts } from "@/lib/posts";
 import Comments from "@/components/Comments";
+
+export function generateStaticParams() {
+  return getAllPosts()
+    .filter((p) => p.source === "aggregated")
+    .map((p) => ({ slug: p.slug }));
+}
 
 // Internal preview page for aggregated (Substack) posts. This exists so the
 // main feed can stay image-free while a post still gets a place to show its
