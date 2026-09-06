@@ -7,9 +7,10 @@ import { getAuthorProfile } from "@/lib/authors";
 // Static export needs every dynamic segment enumerated at build time.
 // Union of confirmed contributors (so profile pages exist even before they
 // have a post yet) and any author slug that already appears on a post.
-export function generateStaticParams() {
+export async function generateStaticParams() {
   const slugs = new Set<string>(newsletterSources.map((s) => s.authorSlug));
-  for (const post of getAllPosts()) slugs.add(post.authorSlug);
+  const posts = await getAllPosts();
+  for (const post of posts) slugs.add(post.authorSlug);
   return Array.from(slugs).map((slug) => ({ slug }));
 }
 
@@ -19,7 +20,7 @@ export default async function AuthorArchivePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const posts = getPostsByAuthor(slug);
+  const posts = await getPostsByAuthor(slug);
   const profile = getAuthorProfile(slug);
   const authorName = profile?.name ?? posts[0]?.authorName ?? slug;
 

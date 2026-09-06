@@ -1,15 +1,11 @@
 import { Post } from "./types";
+import { newsletterSources } from "./sources";
+import { fetchAllAggregatedPosts } from "./rss";
 
-// PLACEHOLDER DATA LAYER.
-// This will eventually be replaced by:
-//   1. A Sanity query for native posts (Step 2 of the build plan)
-//   2. A server-side RSS fetch + marker-filter + paywall-detection pass over
-//      each Substack feed (Step 3), normalized into the Post shape below
-//   3. A merge of both lists, sorted by date
-// For now this returns static sample posts so the page shells can be built
-// and handed off for visual design before the real data layer exists.
-
-const samplePosts: Post[] = [
+// Native posts (written directly for the site) are still placeholder data —
+// that's Sanity's job (Step 2 of the build plan), not yet connected. Once
+// NEXT_PUBLIC_SANITY_PROJECT_ID is set, this should become a Sanity query.
+const nativePosts: Post[] = [
   {
     slug: "reading-history-sideways",
     title: "Reading history sideways",
@@ -27,42 +23,53 @@ const samplePosts: Post[] = [
     featured: true,
     commentCount: 4,
   },
-  {
-    slug: "aggregated-free-example",
-    title: "An example free newsletter post",
-    authorName: "Newsletter Writer",
-    authorSlug: "newsletter-writer",
-    date: "2026-08-28",
-    excerpt:
-      "A short summary of a free Substack post, pulled in because it carried the inclusion marker in its subtitle.",
-    body:
-      "The full text of a free Substack post comes through the RSS feed untruncated, so it can be expanded in-feed the same way a native post can, up to the site's word cap, before sending the reader on to the original for the rest.",
-    tags: ["culture", "media"],
-    source: "aggregated",
-    newsletterName: "Example Newsletter",
-    access: "free",
-    thumbnailUrl: "https://placehold.co/600x400?text=Substack+thumbnail",
-    sourceUrl: "https://example.substack.com/p/aggregated-free-example",
-    permalink: "/read/aggregated-free-example",
-    commentCount: 1,
-  },
-  {
-    slug: "aggregated-paid-example",
-    title: "An example paid-tier newsletter post",
-    authorName: "Newsletter Writer",
-    authorSlug: "newsletter-writer",
-    date: "2026-08-20",
-    excerpt:
-      "Substack truncates paid posts in RSS regardless of feed settings, so only this short preview is available before the subscribe wall.",
-    tags: ["politics"],
-    source: "aggregated",
-    newsletterName: "Example Newsletter",
-    access: "paid",
-    // no thumbnailUrl — demonstrates the "if there is one" fallback
-    sourceUrl: "https://example.substack.com/p/aggregated-paid-example",
-    permalink: "/read/aggregated-paid-example",
-  },
 ];
+
+// A static export ("output: export") requires every dynamic route to
+// prerender at least one path — /read/[slug] would have zero if literally
+// no contributor has used the [[OOT]] marker yet (a very real state right
+// after launch), which fails the build outright. This single seed post
+// keeps that route buildable until real aggregated posts start flowing in;
+// it disappears automatically the moment fetchAllAggregatedPosts() returns
+// anything real.
+const FALLBACK_AGGREGATED_POST: Post = {
+  slug: "example-newsletter-post",
+  title: "Aggregated posts will appear here",
+  authorName: "The Order of Things",
+  authorSlug: "author-name",
+  date: "2026-01-01",
+  excerpt:
+    "Once a contributor adds the [[OOT]] marker to a Substack post's subtitle, it'll show up in this feed automatically — this placeholder just keeps the site buildable until then.",
+  tags: [],
+  source: "aggregated",
+  newsletterName: "Example Newsletter",
+  access: "free",
+  sourceUrl: "https://example.substack.com",
+  permalink: "/read/example-newsletter-post",
+};
+
+// Aggregated posts now come from a real RSS fetch + marker-filter pass over
+// each confirmed newsletter (src/lib/rss.ts), run once per build and reused
+// by every page that needs the combined feed. If a newsletter is
+// unreachable or nobody has used the [[OOT]] marker yet, it just
+// contributes zero posts — see rss.ts for the per-source error handling.
+let cachedAllPosts: Promise<Post[]> | null = null;
+
+function loadAllPosts(): Promise<Post[]> {
+  if (!cachedAllPosts) {
+    cachedAllPosts = fetchAllAggregatedPosts(newsletterSources).then(
+      (aggregated) => {
+        const resolvedAggregated =
+          aggregated.length > 0 ? aggregated : [FALLBACK_AGGREGATED_POST];
+        const all = [...nativePosts, ...resolvedAggregated];
+        return all.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+      }
+    );
+  }
+  return cachedAllPosts;
+}
 
 // Unified "source" attribution for the feed card meta row (author · source · date).
 // Native posts attribute to the site itself; aggregated posts attribute to the
@@ -72,36 +79,45 @@ export function getSourceLabel(post: Post): string {
   return `${post.newsletterName ?? "Substack"} (Substack)`;
 }
 
-export function getAllPosts(): Post[] {
-  return [...samplePosts].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+export async function getAllPosts(): Promise<Post[]> {
+  return loadAllPosts();
 }
 
-export function getPostBySlug(slug: string): Post | undefined {
-  return samplePosts.find((p) => p.slug === slug && p.source === "native");
+export async function getPostBySlug(slug: string): Promise<Post | undefined> {
+  const posts = await loadAllPosts();
+  return posts.find((p) => p.slug === slug && p.source === "native");
 }
 
-export function getAggregatedPostBySlug(slug: string): Post | undefined {
-  return samplePosts.find((p) => p.slug === slug && p.source === "aggregated");
+export async function getAggregatedPostBySlug(
+  slug: string
+): Promise<Post | undefined> {
+  const posts = await loadAllPosts();
+  return posts.find((p) => p.slug === slug && p.source === "aggregated");
 }
 
-export function getPostsByAuthor(authorSlug: string): Post[] {
-  return getAllPosts().filter((p) => p.authorSlug === authorSlug);
+export async function getPostsByAuthor(authorSlug: string): Promise<Post[]> {
+  const posts = await getAllPosts();
+  return posts.filter((p) => p.authorSlug === authorSlug);
 }
 
-export function getPostsByTag(tag: string): Post[] {
-  return getAllPosts().filter((p) => p.tags.includes(tag));
+export async function getPostsByTag(tag: string): Promise<Post[]> {
+  const posts = await getAllPosts();
+  return posts.filter((p) => p.tags.includes(tag));
 }
 
-export function getRecentPosts(limit = 5): Post[] {
-  return getAllPosts().slice(0, limit);
+export async function getRecentPosts(limit = 5): Promise<Post[]> {
+  const posts = await getAllPosts();
+  return posts.slice(0, limit);
 }
 
-export function searchPosts(query: string): Post[] {
+// Pure, synchronous filter — shared by the async server-side searchPosts()
+// below and by SearchClient.tsx, which does the same filtering client-side
+// over a pre-fetched post list (search runs in the browser under static
+// export, since there's no server per request to read the query string).
+export function filterPostsByQuery(posts: Post[], query: string): Post[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  return getAllPosts().filter((p) => {
+  return posts.filter((p) => {
     const haystack = [p.title, p.excerpt, p.body ?? "", p.authorName, ...p.tags]
       .join(" ")
       .toLowerCase();
@@ -109,11 +125,17 @@ export function searchPosts(query: string): Post[] {
   });
 }
 
+export async function searchPosts(query: string): Promise<Post[]> {
+  const posts = await getAllPosts();
+  return filterPostsByQuery(posts, query);
+}
+
 // --- tag cloud ---
 
-export function getTagCounts(): { tag: string; count: number }[] {
+export async function getTagCounts(): Promise<{ tag: string; count: number }[]> {
+  const posts = await loadAllPosts();
   const counts = new Map<string, number>();
-  for (const post of samplePosts) {
+  for (const post of posts) {
     for (const tag of post.tags) {
       counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
@@ -151,13 +173,19 @@ export interface ArchiveYear {
   months: ArchiveMonth[];
 }
 
-export function getArchiveIndex(): ArchiveYear[] {
+export async function getArchiveIndex(): Promise<ArchiveYear[]> {
+  const posts = await getAllPosts();
   const byYear = new Map<number, Map<number, number>>();
 
-  for (const post of getAllPosts()) {
+  for (const post of posts) {
+    // Post dates are stored as plain "YYYY-MM-DD" strings, which Date
+    // parses as UTC midnight. Using local getters (getFullYear/getMonth)
+    // instead of UTC ones shifts the date backward whenever the build
+    // machine's timezone is behind UTC — read the UTC fields instead so a
+    // Sep 1 post doesn't end up filed under August.
     const d = new Date(post.date);
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1;
+    const year = d.getUTCFullYear();
+    const month = d.getUTCMonth() + 1;
     if (!byYear.has(year)) byYear.set(year, new Map());
     const byMonth = byYear.get(year)!;
     byMonth.set(month, (byMonth.get(month) ?? 0) + 1);
@@ -179,9 +207,13 @@ export function getArchiveIndex(): ArchiveYear[] {
     });
 }
 
-export function getPostsByMonth(year: number, month: number): Post[] {
-  return getAllPosts().filter((p) => {
+export async function getPostsByMonth(
+  year: number,
+  month: number
+): Promise<Post[]> {
+  const posts = await getAllPosts();
+  return posts.filter((p) => {
     const d = new Date(p.date);
-    return d.getFullYear() === year && d.getMonth() + 1 === month;
+    return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month;
   });
 }

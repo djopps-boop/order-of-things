@@ -1,36 +1,18 @@
-"use client";
-
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import FeedLayout from "@/components/FeedLayout";
-import FeedCard from "@/components/FeedCard";
-import { searchPosts } from "@/lib/posts";
+import SearchClient from "@/components/SearchClient";
+import { getAllPosts } from "@/lib/posts";
 
-// Client-side so this works under static export: there's no server per
-// request to read the query string from, so the search itself (a plain
-// synchronous filter over the placeholder post list) runs in the browser
-// instead. useSearchParams requires a Suspense boundary, hence the wrapper
-// below.
-function SearchResults() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get("q") ?? "";
-  const results = query ? searchPosts(query) : [];
+// Server component: fetches the full post list once at build time (static
+// export has no server per request), then hands it to the client component
+// that actually reads the ?q= query string and filters, in the browser.
+// FeedLayout renders the (async, server-only) Sidebar, so it has to stay
+// outside the "use client" boundary — see SearchClient.tsx.
+export default async function SearchPage() {
+  const posts = await getAllPosts();
 
   return (
     <FeedLayout>
-      <h1>Search{query ? `: "${query}"` : ""}</h1>
-      {query && results.length === 0 && <p>No posts matched that search.</p>}
-      {results.map((post) => (
-        <FeedCard key={post.slug} post={post} />
-      ))}
+      <SearchClient posts={posts} />
     </FeedLayout>
-  );
-}
-
-export default function SearchPage() {
-  return (
-    <Suspense fallback={null}>
-      <SearchResults />
-    </Suspense>
   );
 }

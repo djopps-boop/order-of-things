@@ -89,11 +89,11 @@ function CalendarIcon() {
   );
 }
 
-export default function Sidebar() {
-  const tagCounts = getTagCounts();
+export default async function Sidebar() {
+  const tagCounts = await getTagCounts();
   const maxCount = Math.max(1, ...tagCounts.map((t) => t.count));
-  const archive = getArchiveIndex();
-  const recentPosts = getRecentPosts();
+  const archive = await getArchiveIndex();
+  const recentPosts = await getRecentPosts();
   const recentComments = getRecentComments();
 
   return (

@@ -7,9 +7,10 @@ import { getPostsByTag, getTagCounts } from "@/lib/posts";
 // a (currently empty) page instead of a 404 until a real taxonomy exists.
 const HEADER_SHORTCUT_SLUGS = ["tv", "film", "music", "books"];
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
   const slugs = new Set<string>(HEADER_SHORTCUT_SLUGS);
-  for (const { tag } of getTagCounts()) slugs.add(tag);
+  const tagCounts = await getTagCounts();
+  for (const { tag } of tagCounts) slugs.add(tag);
   return Array.from(slugs).map((slug) => ({ slug }));
 }
 
@@ -19,7 +20,7 @@ export default async function TagArchivePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const posts = getPostsByTag(slug);
+  const posts = await getPostsByTag(slug);
 
   return (
     <FeedLayout>

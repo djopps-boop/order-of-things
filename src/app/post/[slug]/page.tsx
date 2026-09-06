@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import Comments from "@/components/Comments";
 
-export function generateStaticParams() {
-  return getAllPosts()
+export async function generateStaticParams() {
+  const posts = await getAllPosts();
+  return posts
     .filter((p) => p.source === "native")
     .map((p) => ({ slug: p.slug }));
 }
@@ -15,7 +16,7 @@ export default async function PostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
 
   if (!post) {
     notFound();

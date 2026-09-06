@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { getAggregatedPostBySlug, getAllPosts } from "@/lib/posts";
 import Comments from "@/components/Comments";
 
-export function generateStaticParams() {
-  return getAllPosts()
+export async function generateStaticParams() {
+  const posts = await getAllPosts();
+  return posts
     .filter((p) => p.source === "aggregated")
     .map((p) => ({ slug: p.slug }));
 }
@@ -20,7 +21,7 @@ export default async function ReadPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getAggregatedPostBySlug(slug);
+  const post = await getAggregatedPostBySlug(slug);
 
   if (!post || !post.sourceUrl) {
     notFound();
