@@ -150,16 +150,34 @@ function asArray<T>(value: T | T[] | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
+// fast-xml-parser represents CDATA-wrapped fields (which is how Substack
+// writes title/description/content:encoded) as an ARRAY containing a single
+// `{ "#text": "..." }` object, not the object directly — e.g.
+// `<title><![CDATA[Hello]]></title>` parses to `[{ "#text": "Hello" }]`.
+// A naive "#text" in value check misses the array wrapper and falls through
+// to String(value), which stringifies the object as the literal text
+// "[object Object]". This walks arrays/objects recursively so every shape
+// fast-xml-parser can produce resolves to plain text instead.
 function textOf(value: unknown): string {
+  if (value == null) return "";
   if (typeof value === "string") return value;
-  if (
-    value &&
-    typeof value === "object" &&
-    "#text" in (value as Record<string, unknown>)
-  ) {
-    return String((value as Record<string, unknown>)["#text"] ?? "");
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
   }
-  return value == null ? "" : String(value);
+  if (Array.isArray(value)) {
+    return value.map(textOf).join("");
+  }
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if ("#text" in obj) return textOf(obj["#text"]);
+    // Unknown object shape: concatenate any nested text, skipping XML
+    // attributes (prefixed "@_") rather than risk "[object Object]" again.
+    return Object.entries(obj)
+      .filter(([key]) => !key.startsWith("@_"))
+      .map(([, v]) => textOf(v))
+      .join("");
+  }
+  return "";
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
