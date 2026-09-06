@@ -31,4 +31,11 @@ export interface Post {
   // sourceUrl — deliberately not the raw external URL, so the main feed can
   // stay image-free by default while a post's own page can still show one.
   permalink: string;
+  // From the Claude Design homepage pass: some posts render with a larger
+  // title (30px vs 23px) for visual rhythm in the feed. Which posts get
+  // this is still an open editorial question — mechanism only for now.
+  featured?: boolean;
+  // Placeholder until Giscus is actually connected (needs the real GitHub
+  // repo) — real counts come from GitHub Discussions once that's wired up.
+  commentCount?: number;
 }

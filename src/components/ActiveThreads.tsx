@@ -11,17 +11,18 @@ export default function ActiveThreads() {
 
   return (
     <section className="active-threads">
-      <h3>Active threads</h3>
-      <ul>
+      <div className="active-threads-head">
+        <span>🔥</span>
+        <span>Active Threads</span>
+      </div>
+      <div className="active-threads-list">
         {threads.map((t) => (
-          <li key={t.postHref}>
-            <Link href={t.postHref}>{t.postTitle}</Link>{" "}
-            <span className="recent-date">
-              {t.commentCount} comments · latest {t.latestActivity}
-            </span>
-          </li>
+          <Link key={t.postHref} href={t.postHref} className="active-threads-row">
+            <span className="active-threads-title">{t.postTitle}</span>
+            <span className="active-threads-count">{t.commentCount} replies</span>
+          </Link>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

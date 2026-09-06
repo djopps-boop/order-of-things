@@ -24,6 +24,8 @@ const samplePosts: Post[] = [
     source: "native",
     thumbnailUrl: "https://placehold.co/600x400?text=Featured+image",
     permalink: "/post/reading-history-sideways",
+    featured: true,
+    commentCount: 4,
   },
   {
     slug: "aggregated-free-example",
@@ -42,6 +44,7 @@ const samplePosts: Post[] = [
     thumbnailUrl: "https://placehold.co/600x400?text=Substack+thumbnail",
     sourceUrl: "https://example.substack.com/p/aggregated-free-example",
     permalink: "/read/aggregated-free-example",
+    commentCount: 1,
   },
   {
     slug: "aggregated-paid-example",
@@ -60,6 +63,14 @@ const samplePosts: Post[] = [
     permalink: "/read/aggregated-paid-example",
   },
 ];
+
+// Unified "source" attribution for the feed card meta row (author · source · date).
+// Native posts attribute to the site itself; aggregated posts attribute to the
+// originating newsletter, since that's where the post actually lives.
+export function getSourceLabel(post: Post): string {
+  if (post.source === "native") return "The Order of Things";
+  return `${post.newsletterName ?? "Substack"} (Substack)`;
+}
 
 export function getAllPosts(): Post[] {
   return [...samplePosts].sort(

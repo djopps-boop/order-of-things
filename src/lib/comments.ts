@@ -7,6 +7,7 @@ export interface RecentComment {
   authorName: string;
   postTitle: string;
   postHref: string;
+  snippet: string;
 }
 
 const sampleRecentComments: RecentComment[] = [
@@ -14,11 +15,13 @@ const sampleRecentComments: RecentComment[] = [
     authorName: "[Commenter name]",
     postTitle: "Reading history sideways",
     postHref: "/post/reading-history-sideways",
+    snippet: "[placeholder comment excerpt]",
   },
   {
     authorName: "[Commenter name]",
     postTitle: "An example free newsletter post",
-    postHref: "/post/reading-history-sideways",
+    postHref: "/read/aggregated-free-example",
+    snippet: "[placeholder comment excerpt]",
   },
 ];
 

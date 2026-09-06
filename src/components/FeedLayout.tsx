@@ -6,7 +6,7 @@ import Sidebar from "./Sidebar";
 export default function FeedLayout({ children }: { children: ReactNode }) {
   return (
     <div className="feed-layout">
-      <div className="feed-main">{children}</div>
+      <main className="feed-main">{children}</main>
       <Sidebar />
     </div>
   );
