@@ -23,6 +23,19 @@ function stripMarker(text: string): string {
   return text.replace(new RegExp(MARKER_RE.source, "gi"), "").trim();
 }
 
+// --- bootstrap mode ---------------------------------------------------------
+// Most contributors haven't started adding [[OOT]] to their subtitles yet, so
+// a strict marker-only feed would launch nearly empty. While that's true, we
+// backfill each newsletter with its most recent posts (marker or not) so the
+// site launches with real content. Once a given contributor adds the marker
+// to a post, that contributor's feed switches over to marker-only automatically
+// (see the per-source logic below) — no code change needed as adoption grows.
+//
+// To turn this off everywhere at once (once you're happy with marker-only
+// coverage sitewide), flip BOOTSTRAP_MODE to false.
+const BOOTSTRAP_MODE = true;
+const BOOTSTRAP_POSTS_PER_SOURCE = 2;
+
 // --- paywall detection ----------------------------------------------------
 // Substack's RSS feed doesn't expose a clean "this post is paid" flag, so
 // this is a heuristic built from two signals: known boilerplate phrases
@@ -208,14 +221,39 @@ export async function fetchAggregatedPosts(
   const items = asArray(parsed?.rss?.channel?.item);
   const posts: Post[] = [];
 
-  for (const item of items) {
+  // Split into marker-tagged items and everything else, preserving the feed's
+  // own order (Substack feeds are newest-first).
+  const validItems = items.filter((item) => {
+    const rawTitle = textOf(item.title);
+    const link = textOf(item.link);
+    return !!rawTitle && !!link;
+  });
+  const taggedItems = validItems.filter((item) =>
+    hasMarker(
+      textOf(item.title),
+      textOf(item.description),
+      textOf(item["content:encoded"])
+    )
+  );
+
+  let selectedItems: RssItem[];
+  if (taggedItems.length > 0) {
+    // This contributor has started tagging posts — go marker-only for them,
+    // even in bootstrap mode.
+    selectedItems = taggedItems;
+  } else if (BOOTSTRAP_MODE) {
+    // No tagged posts yet from this contributor: backfill with their most
+    // recent posts so the site isn't empty while adoption catches up.
+    selectedItems = validItems.slice(0, BOOTSTRAP_POSTS_PER_SOURCE);
+  } else {
+    selectedItems = [];
+  }
+
+  for (const item of selectedItems) {
     const rawTitle = textOf(item.title);
     const rawDescription = textOf(item.description);
     const rawContent = textOf(item["content:encoded"]);
     const link = textOf(item.link);
-
-    if (!rawTitle || !link) continue;
-    if (!hasMarker(rawTitle, rawDescription, rawContent)) continue;
 
     const title = stripMarker(rawTitle);
     const slug = slugFromLink(link);
