@@ -85,6 +85,11 @@ function stripPaywallBoilerplateHtml(html: string, plainText: string): string {
 // lists, inline images). We keep a sanitized subset of it — rather than
 // flattening everything to plain text — so posts read the same way they do
 // on Substack: same paragraph breaks, emphasis, and links.
+// Images caused enough visual problems in practice (broken proportions,
+// stray Substack promo/tracking images mixed into the body, etc.) that
+// we've dropped image support entirely for now -- aggregated posts are
+// text-only. If this changes, re-add "img", "figure", "figcaption" here
+// and to allowedAttributes below.
 const ALLOWED_TAGS = [
   "p",
   "br",
@@ -104,9 +109,6 @@ const ALLOWED_TAGS = [
   "h4",
   "h5",
   "h6",
-  "img",
-  "figure",
-  "figcaption",
   "hr",
   "code",
   "pre",
@@ -117,7 +119,6 @@ function sanitizeContentHtml(html: string): string {
     allowedTags: ALLOWED_TAGS,
     allowedAttributes: {
       a: ["href", "target", "rel"],
-      img: ["src", "alt"],
     },
     allowedSchemes: ["http", "https", "mailto"],
     transformTags: {
@@ -128,17 +129,6 @@ function sanitizeContentHtml(html: string): string {
       ),
     },
   }).trim();
-}
-
-// Substack posts almost always open content:encoded with the same hero
-// image we already pull out separately as the featured thumbnail (shown
-// above the title). Without this, that image would show up a second time
-// as the very first thing in the excerpt/body text.
-function stripLeadingImage(html: string): string {
-  return html.replace(
-    /^\s*(?:<figure[^>]*>\s*)?<img[^>]*>\s*(?:<figcaption[^>]*>[\s\S]*?<\/figcaption>\s*)?(?:<\/figure>\s*)?/i,
-    ""
-  );
 }
 
 // Stripping the [[OOT]] marker sometimes leaves behind an empty paragraph
@@ -166,11 +156,6 @@ function htmlToPlainText(html: string): string {
     .replace(/[ \t]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-}
-
-function firstImageSrc(html: string): string | undefined {
-  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return match?.[1];
 }
 
 function slugFromLink(link: string): string {
@@ -364,9 +349,7 @@ export async function fetchAggregatedPosts(
     // from the raw content too, not just title/description, before it gets
     // sanitized and shown.
     const sanitizedHtml = rawContent
-      ? removeEmptyBlocks(
-          stripLeadingImage(sanitizeContentHtml(stripMarker(rawContent)))
-        )
+      ? removeEmptyBlocks(sanitizeContentHtml(stripMarker(rawContent)))
       : "";
     const cleanedHtml = sanitizedHtml
       ? stripPaywallBoilerplateHtml(sanitizedHtml, bodyPlain)
@@ -381,13 +364,6 @@ export async function fetchAggregatedPosts(
 
     const excerptSource = cleanedHtml || teaserHtml;
     const excerpt = truncateHtmlByWords(excerptSource, 150).html;
-
-    const enclosures = asArray(item.enclosure);
-    const enclosureUrl = enclosures
-      .map((e) => e?.["@_url"])
-      .find((u): u is string => !!u);
-    const thumbnailUrl =
-      enclosureUrl || (rawContent ? firstImageSrc(rawContent) : undefined);
 
     const tags = asArray(item.category)
       .map((c) => slugifyTag(textOf(c)))
@@ -405,7 +381,6 @@ export async function fetchAggregatedPosts(
       source: "aggregated",
       newsletterName: source.newsletterName,
       access: isPaid ? "paid" : "free",
-      thumbnailUrl,
       sourceUrl: link,
       permalink: `/read/${slug}`,
     });
