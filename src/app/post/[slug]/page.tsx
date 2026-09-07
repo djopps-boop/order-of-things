@@ -47,9 +47,10 @@ export default async function PostPage({
         </div>
       )}
 
-      <div className="post-body">
-        <p>{post.body}</p>
-      </div>
+      <div
+        className="post-body rich-text"
+        dangerouslySetInnerHTML={{ __html: post.body ?? "" }}
+      />
 
       <footer className="post-footer">
         <Link href={`/author/${post.authorSlug}`}>

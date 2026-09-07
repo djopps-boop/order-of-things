@@ -1,6 +1,7 @@
 import { Post } from "./types";
 import { newsletterSources } from "./sources";
 import { fetchAllAggregatedPosts } from "./rss";
+import { toParagraphHtml } from "./htmlText";
 
 // Native posts (written directly for the site) are still placeholder data —
 // that's Sanity's job (Step 2 of the build plan), not yet connected. Once
@@ -12,10 +13,12 @@ const nativePosts: Post[] = [
     authorName: "Author Name",
     authorSlug: "author-name",
     date: "2026-09-01",
-    excerpt:
-      "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding.",
-    body:
-      "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding. The instinct to treat our own moment as uniquely urgent is not wrong exactly, but it obscures how ordinary the feeling is. Every generation has believed itself to be living through the hinge point, and most of them were, in some modest sense, correct — history has no shortage of hinges. What's harder to hold onto is the humility that comes from knowing you can't yet tell which kind of hinge this one is. That uncertainty isn't a failure of analysis. It's the actual condition of being inside events rather than looking back at them, and pretending otherwise is its own kind of vanity.",
+    excerpt: toParagraphHtml(
+      "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding."
+    ),
+    body: toParagraphHtml(
+      "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding. The instinct to treat our own moment as uniquely urgent is not wrong exactly, but it obscures how ordinary the feeling is. Every generation has believed itself to be living through the hinge point, and most of them were, in some modest sense, correct — history has no shortage of hinges.\n\nWhat's harder to hold onto is the humility that comes from knowing you can't yet tell which kind of hinge this one is. That uncertainty isn't a failure of analysis. It's the actual condition of being inside events rather than looking back at them, and pretending otherwise is its own kind of vanity."
+    ),
     tags: ["culture", "history"],
     source: "native",
     thumbnailUrl: "https://placehold.co/600x400?text=Featured+image",
@@ -38,8 +41,9 @@ const FALLBACK_AGGREGATED_POST: Post = {
   authorName: "The Order of Things",
   authorSlug: "author-name",
   date: "2026-01-01",
-  excerpt:
-    "Once a contributor adds the [[OOT]] marker to a Substack post's subtitle, it'll show up in this feed automatically — this placeholder just keeps the site buildable until then.",
+  excerpt: toParagraphHtml(
+    "Once a contributor adds the [[OOT]] marker to a Substack post's subtitle, it'll show up in this feed automatically — this placeholder just keeps the site buildable until then."
+  ),
   tags: [],
   source: "aggregated",
   newsletterName: "Example Newsletter",
@@ -117,8 +121,15 @@ export async function getRecentPosts(limit = 5): Promise<Post[]> {
 export function filterPostsByQuery(posts: Post[], query: string): Post[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
+  const stripTags = (html: string) => html.replace(/<[^>]+>/g, " ");
   return posts.filter((p) => {
-    const haystack = [p.title, p.excerpt, p.body ?? "", p.authorName, ...p.tags]
+    const haystack = [
+      p.title,
+      stripTags(p.excerpt),
+      stripTags(p.body ?? ""),
+      p.authorName,
+      ...p.tags,
+    ]
       .join(" ")
       .toLowerCase();
     return haystack.includes(q);

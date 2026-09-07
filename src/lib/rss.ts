@@ -1,7 +1,8 @@
 import { XMLParser } from "fast-xml-parser";
+import sanitizeHtml from "sanitize-html";
 import { Post } from "./types";
 import { NewsletterSource } from "./sources";
-import { truncateWords } from "./config";
+import { escapeHtml, truncateHtmlByWords } from "./htmlText";
 
 // --- the inclusion marker ------------------------------------------------
 // Contributors flag a Substack post for inclusion in the group blog by
@@ -40,9 +41,7 @@ const BOOTSTRAP_POSTS_PER_SOURCE = 2;
 // Substack's RSS feed doesn't expose a clean "this post is paid" flag, so
 // this is a heuristic built from two signals: known boilerplate phrases
 // Substack inserts at the paywall, and content:encoded being suspiciously
-// short relative to the teaser. Worth revisiting once we can see real feed
-// output from each of the 18 newsletters — this sandbox can't reach
-// substack.com directly, so this hasn't been tested against live data yet.
+// short relative to the teaser.
 const PAYWALL_PHRASES = [
   "this post is for paid subscribers",
   "this post is for paying subscribers",
@@ -61,22 +60,90 @@ function detectPaywall(contentText: string, hasContent: boolean): boolean {
   return false;
 }
 
-function stripPaywallBoilerplate(text: string): string {
-  let result = text;
+// Finds where a paywall phrase starts (in the plain-text rendering of the
+// post) and cuts the *HTML* body off at the equivalent word count, so the
+// reader never sees Substack's "this post is for paid subscribers"
+// boilerplate — while keeping the formatting of everything before it.
+function stripPaywallBoilerplateHtml(html: string, plainText: string): string {
+  const lower = plainText.toLowerCase();
+  let cutIndex: number | null = null;
   for (const phrase of PAYWALL_PHRASES) {
-    const idx = result.toLowerCase().indexOf(phrase);
-    if (idx !== -1) {
-      result = result.slice(0, idx).trim();
-    }
+    const idx = lower.indexOf(phrase);
+    if (idx !== -1 && (cutIndex === null || idx < cutIndex)) cutIndex = idx;
   }
-  return result;
+  if (cutIndex === null) return html;
+  const wordsBeforeCut = plainText
+    .slice(0, cutIndex)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return truncateHtmlByWords(html, wordsBeforeCut).html;
+}
+
+// --- HTML sanitization -------------------------------------------------------
+// Substack's content:encoded is real HTML (paragraphs, bold/italic, links,
+// lists, inline images). We keep a sanitized subset of it — rather than
+// flattening everything to plain text — so posts read the same way they do
+// on Substack: same paragraph breaks, emphasis, and links.
+const ALLOWED_TAGS = [
+  "p",
+  "br",
+  "strong",
+  "b",
+  "em",
+  "i",
+  "u",
+  "a",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "img",
+  "figure",
+  "figcaption",
+  "hr",
+  "code",
+  "pre",
+];
+
+function sanitizeContentHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform(
+        "a",
+        { target: "_blank", rel: "noopener noreferrer" },
+        true
+      ),
+    },
+  }).trim();
+}
+
+// Substack posts almost always open content:encoded with the same hero
+// image we already pull out separately as the featured thumbnail (shown
+// above the title). Without this, that image would show up a second time
+// as the very first thing in the excerpt/body text.
+function stripLeadingImage(html: string): string {
+  return html.replace(
+    /^\s*(?:<figure[^>]*>\s*)?<img[^>]*>\s*(?:<figcaption[^>]*>[\s\S]*?<\/figcaption>\s*)?(?:<\/figure>\s*)?/i,
+    ""
+  );
 }
 
 // --- HTML -> plain text ----------------------------------------------------
-// FeedCard/read-page rendering expects plain prose (see truncateWords), not
-// HTML, so content:encoded gets flattened here. This loses inline
-// links/formatting from the original post — an acceptable simplification
-// for now, matching how native placeholder posts are stored.
+// Still needed for paywall detection (word count, phrase matching) even
+// though display now uses the sanitized HTML above.
 function htmlToPlainText(html: string): string {
   return html
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
@@ -278,12 +345,29 @@ export async function fetchAggregatedPosts(
     const date = toIsoDate(textOf(item.pubDate));
     const authorName = textOf(item["dc:creator"]) || source.authorName;
 
+    // Plain text is still used for paywall detection and for finding
+    // exactly where the paywall boilerplate starts.
     const bodyPlain = rawContent ? htmlToPlainText(rawContent) : "";
     const isPaid = detectPaywall(bodyPlain, !!rawContent);
 
-    const teaser = stripMarker(rawDescription);
-    const excerptSource = teaser || bodyPlain;
-    const excerpt = truncateWords(excerptSource, 150).text;
+    // Sanitized HTML is what actually gets displayed, so formatting from
+    // the original post (paragraphs, bold/italic, links, lists) survives.
+    const sanitizedHtml = rawContent
+      ? stripLeadingImage(sanitizeContentHtml(rawContent))
+      : "";
+    const cleanedHtml = sanitizedHtml
+      ? stripPaywallBoilerplateHtml(sanitizedHtml, bodyPlain)
+      : "";
+
+    // Fallback for the rare case a feed has no content:encoded at all —
+    // the subtitle/description is plain text, not HTML, so it just gets
+    // escaped and wrapped rather than run through the HTML sanitizer.
+    const teaserHtml = rawDescription
+      ? `<p>${escapeHtml(stripMarker(rawDescription))}</p>`
+      : "";
+
+    const excerptSource = cleanedHtml || teaserHtml;
+    const excerpt = truncateHtmlByWords(excerptSource, 150).html;
 
     const enclosures = asArray(item.enclosure);
     const enclosureUrl = enclosures
@@ -303,7 +387,7 @@ export async function fetchAggregatedPosts(
       authorSlug: source.authorSlug,
       date,
       excerpt,
-      body: isPaid ? undefined : stripPaywallBoilerplate(bodyPlain) || undefined,
+      body: isPaid ? undefined : cleanedHtml || undefined,
       tags,
       source: "aggregated",
       newsletterName: source.newsletterName,

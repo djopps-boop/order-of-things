@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAggregatedPostBySlug, getAllPosts } from "@/lib/posts";
+import { WORD_CAP } from "@/lib/config";
+import { truncateHtmlByWords } from "@/lib/htmlText";
 import Comments from "@/components/Comments";
 
 export async function generateStaticParams() {
@@ -26,6 +28,8 @@ export default async function ReadPage({
   if (!post || !post.sourceUrl) {
     notFound();
   }
+
+  const truncated = post.body ? truncateHtmlByWords(post.body, WORD_CAP) : null;
 
   return (
     <article className="read-page">
@@ -61,7 +65,17 @@ export default async function ReadPage({
         </div>
       )}
 
-      <p className="feed-card-excerpt">{post.excerpt}</p>
+      <div
+        className="feed-card-excerpt rich-text"
+        dangerouslySetInnerHTML={{ __html: post.excerpt }}
+      />
+
+      {truncated && (
+        <div
+          className="feed-card-excerpt rich-text"
+          dangerouslySetInnerHTML={{ __html: truncated.html }}
+        />
+      )}
 
       <a
         href={post.sourceUrl}
