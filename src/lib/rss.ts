@@ -141,6 +141,13 @@ function stripLeadingImage(html: string): string {
   );
 }
 
+// Stripping the [[OOT]] marker sometimes leaves behind an empty paragraph
+// or list item (e.g. a post where the marker sat on its own line) -- clean
+// those up so they don't render as stray blank gaps.
+function removeEmptyBlocks(html: string): string {
+  return html.replace(/<(p|li)>(?:\s|&nbsp;)*<\/\1>/gi, "");
+}
+
 // --- HTML -> plain text ----------------------------------------------------
 // Still needed for paywall detection (word count, phrase matching) even
 // though display now uses the sanitized HTML above.
@@ -352,8 +359,14 @@ export async function fetchAggregatedPosts(
 
     // Sanitized HTML is what actually gets displayed, so formatting from
     // the original post (paragraphs, bold/italic, links, lists) survives.
+    // The [[OOT]] marker can appear anywhere a contributor puts it --
+    // title, subtitle, or the post body itself -- so it needs stripping
+    // from the raw content too, not just title/description, before it gets
+    // sanitized and shown.
     const sanitizedHtml = rawContent
-      ? stripLeadingImage(sanitizeContentHtml(rawContent))
+      ? removeEmptyBlocks(
+          stripLeadingImage(sanitizeContentHtml(stripMarker(rawContent)))
+        )
       : "";
     const cleanedHtml = sanitizedHtml
       ? stripPaywallBoilerplateHtml(sanitizedHtml, bodyPlain)
