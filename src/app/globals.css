@@ -342,12 +342,15 @@ a {
   font-style: italic;
 }
 
-/* Deliberately flat: without an explicit font-size, h1-h6 fall back to the
-   browser's default scale (h1 as big as 2em), which in a post body reads as
-   a brand-new post headline rather than a section break within one post --
-   especially since a real post title is itself an <h1>. Normalizing every
-   level to the same modest, bold size keeps the visual hierarchy (still
-   clearly a heading) without it competing with actual post titles. */
+/* In-body headers get the site's existing "eyebrow label" treatment (same
+   idea as .sidebar-head / .active-threads-head: small, bold, uppercase,
+   letter-spaced, accent-colored) instead of an enlarged heading. Without
+   this, a section header inside a post's HTML -- especially h1/h2, which
+   default to as big as 2em -- reads as a brand-new post headline rather
+   than a break within one post, since a real post title is itself
+   rendered as an <h1> at 23-30px in mixed case. Normalizing every level to
+   this label style keeps a clear visual hierarchy while making it
+   unmistakable at a glance that this isn't a new post title. */
 .rich-text h1,
 .rich-text h2,
 .rich-text h3,
@@ -355,11 +358,13 @@ a {
 .rich-text h5,
 .rich-text h6 {
   font-family: "Libre Franklin", sans-serif;
-  font-size: 1.05em;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 1.4em 0 0.5em 0;
-  line-height: 1.3;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 1.8em 0 0.7em 0;
+  line-height: 1.4;
 }
 
 .rich-text img {
