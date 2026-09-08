@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAggregatedPostBySlug, getAllPosts } from "@/lib/posts";
-import { EXCERPT_WORD_CAP, WORD_CAP } from "@/lib/config";
-import { sliceHtmlByWords } from "@/lib/htmlText";
+import { WORD_CAP } from "@/lib/config";
+import { truncateHtmlByWords } from "@/lib/htmlText";
 import Comments from "@/components/Comments";
 
 export async function generateStaticParams() {
@@ -29,8 +29,11 @@ export default async function ReadPage({
     notFound();
   }
 
-  const continuation = post.body
-    ? sliceHtmlByWords(post.body, EXCERPT_WORD_CAP, WORD_CAP)
+  // One contiguous slice from word 0, not the excerpt plus a separately
+  // sliced continuation -- otherwise a paragraph straddling word 150 would
+  // get an artificial break where the two fragments were stitched together.
+  const bodyText = post.body
+    ? truncateHtmlByWords(post.body, WORD_CAP)
     : null;
 
   return (
@@ -69,15 +72,8 @@ export default async function ReadPage({
 
       <div
         className="feed-card-excerpt rich-text"
-        dangerouslySetInnerHTML={{ __html: post.excerpt }}
+        dangerouslySetInnerHTML={{ __html: bodyText ? bodyText.html : post.excerpt }}
       />
-
-      {continuation && (
-        <div
-          className="feed-card-excerpt rich-text"
-          dangerouslySetInnerHTML={{ __html: continuation.html }}
-        />
-      )}
 
       <a
         href={post.sourceUrl}

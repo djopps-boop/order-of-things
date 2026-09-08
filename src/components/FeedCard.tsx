@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Post } from "@/lib/types";
 import { EXCERPT_WORD_CAP, WORD_CAP } from "@/lib/config";
-import { htmlWordCount, sliceHtmlByWords } from "@/lib/htmlText";
+import { htmlWordCount, truncateHtmlByWords } from "@/lib/htmlText";
 import { getSourceLabel } from "@/lib/posts";
 
 export default function FeedCard({ post }: { post: Post }) {
@@ -16,8 +16,12 @@ export default function FeedCard({ post }: { post: Post }) {
   const isPaid = isAggregated && post.access === "paid";
   const canExpand =
     !isPaid && !!post.body && htmlWordCount(post.body) > EXCERPT_WORD_CAP;
-  const continuation = post.body
-    ? sliceHtmlByWords(post.body, EXCERPT_WORD_CAP, WORD_CAP)
+  // Re-slicing from word 0 (rather than stitching the excerpt together with
+  // a separate word-150-to-600 fragment) means a paragraph that happens to
+  // straddle word 150 stays one continuous <p> instead of getting an
+  // artificial break where the two fragments were joined.
+  const expandedText = post.body
+    ? truncateHtmlByWords(post.body, WORD_CAP)
     : null;
 
   async function handleShare() {
@@ -74,15 +78,17 @@ export default function FeedCard({ post }: { post: Post }) {
         <img src={post.thumbnailUrl} alt="" className="feed-card-image" />
       )}
 
-      <div
-        className="feed-card-excerpt rich-text"
-        dangerouslySetInnerHTML={{ __html: post.excerpt }}
-      />
+      {!expanded && (
+        <div
+          className="feed-card-excerpt rich-text"
+          dangerouslySetInnerHTML={{ __html: post.excerpt }}
+        />
+      )}
 
-      {expanded && continuation && (
+      {expanded && expandedText && (
         <div
           className="feed-card-excerpt feed-card-expanded-text rich-text"
-          dangerouslySetInnerHTML={{ __html: continuation.html }}
+          dangerouslySetInnerHTML={{ __html: expandedText.html }}
         />
       )}
 
