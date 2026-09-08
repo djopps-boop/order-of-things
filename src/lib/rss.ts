@@ -4,6 +4,7 @@ import { Post } from "./types";
 import { NewsletterSource } from "./sources";
 import { escapeHtml, truncateHtmlByWords } from "./htmlText";
 import { EXCERPT_WORD_CAP } from "./config";
+import { TAG_OVERRIDES } from "./tagOverrides";
 
 // --- the inclusion marker ------------------------------------------------
 // Contributors flag a Substack post for inclusion in the group blog by
@@ -436,9 +437,15 @@ export async function fetchAggregatedPosts(
     const excerptSource = cleanedHtml || teaserHtml;
     const excerpt = truncateHtmlByWords(excerptSource, EXCERPT_WORD_CAP).html;
 
-    const tags = asArray(item.category)
+    // Substack's own <category> field (almost always empty in practice)
+    // merged with any hand-picked tags for this post -- see tagOverrides.ts
+    // for why the override list exists and what it does and doesn't cover.
+    const rssTags = asArray(item.category)
       .map((c) => slugifyTag(textOf(c)))
       .filter(Boolean);
+    const tags = Array.from(
+      new Set([...rssTags, ...(TAG_OVERRIDES[slug] ?? [])])
+    );
 
     posts.push({
       slug,
