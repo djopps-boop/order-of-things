@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Post } from "@/lib/types";
-import { WORD_CAP } from "@/lib/config";
-import { truncateHtmlByWords } from "@/lib/htmlText";
+import { EXCERPT_WORD_CAP, WORD_CAP } from "@/lib/config";
+import { htmlWordCount, sliceHtmlByWords } from "@/lib/htmlText";
 import { getSourceLabel } from "@/lib/posts";
 
 export default function FeedCard({ post }: { post: Post }) {
@@ -14,8 +14,11 @@ export default function FeedCard({ post }: { post: Post }) {
 
   const isAggregated = post.source === "aggregated";
   const isPaid = isAggregated && post.access === "paid";
-  const canExpand = !isPaid && !!post.body;
-  const truncated = post.body ? truncateHtmlByWords(post.body, WORD_CAP) : null;
+  const canExpand =
+    !isPaid && !!post.body && htmlWordCount(post.body) > EXCERPT_WORD_CAP;
+  const continuation = post.body
+    ? sliceHtmlByWords(post.body, EXCERPT_WORD_CAP, WORD_CAP)
+    : null;
 
   async function handleShare() {
     const url =
@@ -76,10 +79,10 @@ export default function FeedCard({ post }: { post: Post }) {
         dangerouslySetInnerHTML={{ __html: post.excerpt }}
       />
 
-      {expanded && truncated && (
+      {expanded && continuation && (
         <div
           className="feed-card-excerpt feed-card-expanded-text rich-text"
-          dangerouslySetInnerHTML={{ __html: truncated.html }}
+          dangerouslySetInnerHTML={{ __html: continuation.html }}
         />
       )}
 

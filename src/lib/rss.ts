@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import { Post } from "./types";
 import { NewsletterSource } from "./sources";
 import { escapeHtml, truncateHtmlByWords } from "./htmlText";
+import { EXCERPT_WORD_CAP } from "./config";
 
 // --- the inclusion marker ------------------------------------------------
 // Contributors flag a Substack post for inclusion in the group blog by
@@ -363,7 +364,7 @@ export async function fetchAggregatedPosts(
       : "";
 
     const excerptSource = cleanedHtml || teaserHtml;
-    const excerpt = truncateHtmlByWords(excerptSource, 150).html;
+    const excerpt = truncateHtmlByWords(excerptSource, EXCERPT_WORD_CAP).html;
 
     const tags = asArray(item.category)
       .map((c) => slugifyTag(textOf(c)))

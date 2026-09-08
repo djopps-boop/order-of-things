@@ -110,3 +110,78 @@ export function truncateHtmlByWords(
 
   return { html: result, truncated };
 }
+
+// Returns the HTML for words [startWord, endWord) -- e.g. sliceHtmlByWords(html, 150, 600)
+// picks up exactly where truncateHtmlByWords(html, 150) left off, instead of
+// re-rendering from the start. Any tags that were open at startWord get
+// reopened at the beginning of the result (so it's valid standalone HTML on
+// its own), and any left open at endWord get closed, same as
+// truncateHtmlByWords. `hasMore` is true if the original content continues
+// past endWord.
+export function sliceHtmlByWords(
+  html: string,
+  startWord: number,
+  endWord: number
+): { html: string; hasMore: boolean } {
+  if (!html || endWord <= startWord) return { html: "", hasMore: false };
+
+  const tokens = html.match(/<[^>]+>|[^<]+/g) || [];
+  let wordCount = 0;
+  const stack: string[] = [];
+  let result = "";
+  let capturing = false;
+  let hasMore = false;
+  let done = false;
+
+  for (const token of tokens) {
+    if (done) break;
+
+    if (token.startsWith("<")) {
+      const isClosing = /^<\//.test(token);
+      const tagMatch = token.match(/^<\/?([a-zA-Z0-9]+)/);
+      const tagName = tagMatch ? tagMatch[1].toLowerCase() : "";
+
+      if (isClosing) {
+        const idx = stack.lastIndexOf(tagName);
+        if (idx !== -1) stack.splice(idx, 1);
+      } else {
+        const isSelfClosing = /\/>\s*$/.test(token) || VOID_TAGS.has(tagName);
+        if (!isSelfClosing && tagName) stack.push(tagName);
+      }
+      if (capturing) result += token;
+      continue;
+    }
+
+    const pieces = token.split(/(\s+)/);
+    for (const piece of pieces) {
+      if (piece === "") continue;
+      if (/^\s+$/.test(piece)) {
+        if (capturing) result += piece;
+        continue;
+      }
+      if (!capturing && wordCount === startWord) {
+        capturing = true;
+        result += stack.map((t) => `<${t}>`).join("");
+      }
+      if (capturing) {
+        if (wordCount >= endWord) {
+          hasMore = true;
+          done = true;
+          break;
+        }
+        result += piece;
+      }
+      wordCount++;
+    }
+    if (done) break;
+  }
+
+  if (hasMore) {
+    result = result.replace(/\s+$/, "") + "…";
+    for (let i = stack.length - 1; i >= 0; i--) {
+      result += `</${stack[i]}>`;
+    }
+  }
+
+  return { html: result, hasMore };
+}
