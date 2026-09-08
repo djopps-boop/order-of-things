@@ -115,9 +115,49 @@ const ALLOWED_TAGS = [
   "pre",
 ];
 
+// Tags whose content should be dropped entirely, not just unwrapped.
+// sanitize-html's default behavior for a disallowed tag is to remove the
+// tag but keep its inner text -- fine for e.g. a stray <span>, wrong for
+// these, which only ever wrap boilerplate we don't want showing up as
+// prose. Passing them in `allowedTags` (see sanitizeContentHtml below) is
+// what makes sanitize-html hand them to exclusiveFilter instead of
+// silently unwrapping them.
+const DROP_ENTIRELY_TAGS = ["figcaption"];
+
+// exclusiveFilter callback for sanitizeContentHtml: return true to drop an
+// element (and everything inside it) outright.
+function shouldExcludeFrame(frame: {
+  tag: string;
+  attribs: Record<string, string>;
+}): boolean {
+  const { tag, attribs } = frame;
+
+  // Photo captions from Substack's image embeds, e.g.
+  //   <figcaption class="image-caption">...Photo by X/Getty Images</figcaption>
+  // We already strip <img> itself; without this, the caption sentence
+  // would leak into the post body looking like ordinary prose (this is
+  // exactly the bug reported: a photo credit line showing up as body text).
+  if (tag === "figcaption") return true;
+
+  // Substack's "Subscribe now" / "Share" call-to-action buttons, e.g.
+  //   <p class="button-wrapper" data-component-name="ButtonCreateButton">
+  //     <a class="button primary" href="...">Subscribe now</a>
+  //   </p>
+  // Note: `class` only survives on frame.attribs here because `p` has no
+  // explicit entry in allowedAttributes below -- for a tag like `a` that
+  // does have one, its attributes are already filtered down to the
+  // allowlist by the time exclusiveFilter runs, so `class` wouldn't be
+  // visible there. Matching on the wrapping <p> instead removes the whole
+  // subtree, <a> included.
+  const cls = typeof attribs?.class === "string" ? attribs.class : "";
+  if (tag === "p" && /\bbutton-wrapper\b/.test(cls)) return true;
+
+  return false;
+}
+
 function sanitizeContentHtml(html: string): string {
   return sanitizeHtml(html, {
-    allowedTags: ALLOWED_TAGS,
+    allowedTags: [...ALLOWED_TAGS, ...DROP_ENTIRELY_TAGS],
     allowedAttributes: {
       a: ["href", "target", "rel"],
     },
@@ -129,14 +169,21 @@ function sanitizeContentHtml(html: string): string {
         true
       ),
     },
+    exclusiveFilter: shouldExcludeFrame,
   }).trim();
 }
 
 // Stripping the [[OOT]] marker sometimes leaves behind an empty paragraph
 // or list item (e.g. a post where the marker sat on its own line) -- clean
-// those up so they don't render as stray blank gaps.
+// those up so they don't render as stray blank gaps. Also cleans up empty
+// <a> tags: Substack wraps its image embeds in a decorative <a> (restack/
+// view-image chrome) that has no text of its own once the <img> inside it
+// is stripped, so it would otherwise survive as an invisible, pointless
+// empty link.
 function removeEmptyBlocks(html: string): string {
-  return html.replace(/<(p|li)>(?:\s|&nbsp;)*<\/\1>/gi, "");
+  return html
+    .replace(/<(p|li)>(?:\s|&nbsp;)*<\/\1>/gi, "")
+    .replace(/<a(?:\s[^>]*)?>(?:\s|&nbsp;)*<\/a>/gi, "");
 }
 
 // --- HTML -> plain text ----------------------------------------------------

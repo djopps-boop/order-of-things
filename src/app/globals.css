@@ -342,6 +342,12 @@ a {
   font-style: italic;
 }
 
+/* Deliberately flat: without an explicit font-size, h1-h6 fall back to the
+   browser's default scale (h1 as big as 2em), which in a post body reads as
+   a brand-new post headline rather than a section break within one post --
+   especially since a real post title is itself an <h1>. Normalizing every
+   level to the same modest, bold size keeps the visual hierarchy (still
+   clearly a heading) without it competing with actual post titles. */
 .rich-text h1,
 .rich-text h2,
 .rich-text h3,
@@ -349,8 +355,10 @@ a {
 .rich-text h5,
 .rich-text h6 {
   font-family: "Libre Franklin", sans-serif;
+  font-size: 1.05em;
+  font-weight: 700;
   color: var(--ink);
-  margin: 1em 0 0.5em 0;
+  margin: 1.4em 0 0.5em 0;
   line-height: 1.3;
 }
 
