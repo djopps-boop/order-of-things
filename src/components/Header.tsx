@@ -1,14 +1,20 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
-// Decorative shortcuts to a handful of tags — placeholders until a real tag
-// taxonomy exists (see the design handoff: TV/Film/Music/Books were the
-// mock's illustrative picks, not a finished scheme).
+// Shortcuts to the site's four broad content categories -- replaces the
+// original TV/Film/Music/Books placeholders (see the design handoff),
+// which were illustrative picks rather than categories any actual post
+// belonged to. These four were chosen by looking at the specific tags
+// drafted for every post imported so far (see tagOverrides.ts) and
+// grouping them into the themes that actually recur across contributors:
+// literary/intellectual criticism ("Ideas") is by far the largest, with
+// technology, politics, and the more art/lifestyle-adjacent pieces
+// ("Culture") each well-represented too.
 const tagShortcuts = [
-  { emoji: "📺", name: "TV", slug: "tv" },
-  { emoji: "🎬", name: "Film", slug: "film" },
-  { emoji: "🎵", name: "Music", slug: "music" },
-  { emoji: "📚", name: "Books", slug: "books" },
+  { emoji: "💡", name: "Ideas", slug: "ideas" },
+  { emoji: "🏛️", name: "Politics", slug: "politics" },
+  { emoji: "🤖", name: "Technology", slug: "technology" },
+  { emoji: "🎭", name: "Culture", slug: "culture" },
 ];
 
 export default function Header() {
