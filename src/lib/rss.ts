@@ -126,11 +126,22 @@ const DROP_ENTIRELY_TAGS = ["figcaption"];
 
 // exclusiveFilter callback for sanitizeContentHtml: return true to drop an
 // element (and everything inside it) outright.
+// Normalizes trailing arrows/ellipses/dashes off link text so "Read more",
+// "Read More →", "Read more..." etc. all compare equal.
+function normalizeLinkText(text: string): string {
+  return text
+    .trim()
+    .replace(/[\s→–—\->.…]+$/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 function shouldExcludeFrame(frame: {
   tag: string;
   attribs: Record<string, string>;
+  text?: string;
 }): boolean {
-  const { tag, attribs } = frame;
+  const { tag, attribs, text } = frame;
 
   // Photo captions from Substack's image embeds, e.g.
   //   <figcaption class="image-caption">...Photo by X/Getty Images</figcaption>
@@ -151,6 +162,18 @@ function shouldExcludeFrame(frame: {
   // subtree, <a> included.
   const cls = typeof attribs?.class === "string" ? attribs.class : "";
   if (tag === "p" && /\bbutton-wrapper\b/.test(cls)) return true;
+
+  // Some authors manually truncate their own post with a "Read more" (or
+  // "Read More →") link partway through, pointing back at the same
+  // Substack post -- distinct from the button-wrapper CTA above (this is
+  // a plain inline <a>, not a styled button). We already show our own
+  // "Continue reading on Substack" link at the end of every aggregated
+  // post, so a second, differently-worded jump link partway through the
+  // body is redundant and confusing (reported: two competing links,
+  // wanted only ours). Matched on link text only, not href, so it doesn't
+  // touch ordinary inline links that happen to mention "read more" as
+  // part of a longer sentence.
+  if (tag === "a" && normalizeLinkText(text || "") === "read more") return true;
 
   return false;
 }
