@@ -4,56 +4,61 @@
 // the RSS <category> element (see rss.ts), but almost no contributor
 // actually sets categories on Substack, so the tag cloud/tag pages were
 // nearly empty. These were drafted by reading each currently-imported
-// post's actual content and picking specific, topical tags -- keyed by
-// post slug so they attach to the right post regardless of which
-// newsletter it came from.
+// post's actual content.
 //
-// Each post also gets one or two broad category tags (ideas, politics,
-// technology, culture) appended alongside its specific tags -- these are
-// the four umbrella categories the site's top nav links to (see
-// Header.tsx). Without them, the nav shortcuts would point at empty tag
-// pages: a post's specific tags (e.g. "camille-paglia", "ai-safety") don't
-// automatically belong to a broader category, so that categorization has
-// to be assigned by hand here too.
+// Two layers of tags, deliberately kept separate:
+//  1. Four broad nav categories (ideas, politics, technology, culture) --
+//     what the site's top nav links to (see Header.tsx).
+//  2. A condensed, reusable topic vocabulary (18 tags below, e.g.
+//     "literary-criticism", "higher-education", "queer-culture") -- more
+//     specific than the four nav categories, but deliberately NOT the
+//     hyper-specific one-off tags an earlier draft used (individual
+//     people's names, book titles, etc.), which almost never recur across
+//     posts and wouldn't generalize to future ones either. Picking from a
+//     fixed, shared vocabulary instead means the tag cloud stays coherent
+//     and useful as more posts get added, rather than accumulating
+//     hundreds of tags each used exactly once.
 //
 // This is a one-time snapshot, not a live process: it won't cover posts
 // imported after this was written. rss.ts merges these in alongside
 // whatever (if any) RSS categories a post has, rather than replacing them.
 // Revisit and extend this list periodically as new posts come in, or once
-// contributors start using Substack's own category field.
+// contributors start using Substack's own category field -- and when you
+// do, prefer reusing one of the 18 topic tags above over inventing a new
+// one-off tag, unless a genuinely new recurring theme has emerged.
 export const TAG_OVERRIDES: Record<string, string[]> = {
-  "the-puzzle-of-gender-identity": ["gender-identity", "rogers-brubaker", "trans-rights-backlash", "judith-butler", "sociology-of-categories", "politics", "ideas"],
+  "the-puzzle-of-gender-identity": ["gender-and-sexuality", "social-theory", "politics", "ideas"],
   "testing": ["site-testing"],
-  "paglias-exaggerations": ["camille-paglia", "sexual-personae", "judith-butler", "harvey-mansfield", "ideas"],
-  "the-way-we-live-now": ["susan-sontag", "new-york-native", "andrew-holleran", "gay-press-history", "culture", "ideas"],
-  "why-i-kicked-technology-out-of-my": ["classroom-technology-bans", "tech-free-teaching", "higher-education", "technology"],
-  "from-outrage-to-disgust": ["donald-trump", "us-iran-war", "political-disgust", "politics"],
-  "will-this-college-dropout-be-alaskas": ["jonathan-kreiss-tomkins", "alaska-politics", "alaska-governor-race", "politics"],
-  "is-ai-good-for-religion": ["ai-and-religion", "andy-crouch", "leah-libresco-sargeant", "technology", "ideas"],
-  "life-of-m": ["rachel-cusk", "natalie-portman", "autofiction", "ideas"],
-  "manufacturedcharges": ["ross-barkan", "plagiarism-accusations", "ai-editorial-decisions", "ideas", "technology"],
-  "look-on-my-outcomes-ye-mighty-and": ["learning-outcomes", "higher-ed-bureaucracy", "academic-hiring", "politics"],
-  "two-new-ways-to-see-your-university": ["ai-in-higher-education", "ai-campus-index", "university-rankings", "technology"],
-  "four-phases-of-culture": ["yanis-varoufakis-minotaur", "cultural-production", "publishing-industry", "ideas"],
-  "what-is-the-ethics-of-our-society": ["neoliberalism", "alexandre-lefebvre", "post-liberalism", "john-rawls", "ideas", "politics"],
-  "an-increase-of-comprehension": ["public-intellectuals", "heinrich-heine", "intellectual-history", "ideas"],
-  "bankside-tate-modern-tracey-emin": ["tracey-emin", "tate-modern", "london-photo-essay", "culture"],
-  "discourse": ["bob-dylan", "nobel-prize-in-literature", "literary-criticism", "ideas", "culture"],
-  "at-the-foot-of-the-peak": ["leo-robson", "criticism-as-art-form", "ideas-letter-interview", "ideas"],
-  "weekly-readings-238-083026-090626": ["books-i-wish-id-written", "simone-weil", "harold-bloom", "ai-and-culture", "ideas", "technology"],
-  "the-invisible-college-roberto-bolanos": ["roberto-bolano", "savage-detectives", "invisible-college-series", "ideas"],
-  "authorship-after-the-internet": ["aarthi-vadde", "digital-platforms", "authorship-history", "erasmus", "ideas", "technology"],
-  "why-this-is-hell-the-faust-myth": ["faust-myth", "christopher-marlowe", "karl-ove-knausgaard", "ideas"],
-  "andrew-holleran-gossip-dancer-from-the-dance": ["andrew-holleran", "dancer-from-the-dance", "fire-island", "culture"],
-  "market-nights": ["chicago-nightlife", "gay-bar-culture", "circuit-parties", "culture"],
-  "i-sat-down-to-write-about-love-but": ["true-crime-culture", "manson-murders", "joan-didion", "camille-paglia", "culture"],
-  "10-best-rom-coms-that-might-not-be": ["romantic-comedies", "film-canon", "movie-nostalgia", "culture"],
-  "ghost-stories-no-3": ["schizophrenia", "missing-persons-alerts", "psych-evaluation-podcast", "culture"],
-  "lindsay-clancys-madness-and-ours": ["lindsay-clancy", "insanity-defense", "postpartum-psychosis", "culture", "politics"],
-  "social-shadows-and-social-light": ["jungian-shadow", "ai-safety", "mass-psychology-of-fascism", "technology", "ideas"],
-  "the-ages-of-schmeason": ["giambattista-vico", "barbarism-of-reflection", "volney", "ideas"],
-  "anthropomorphism-is-built-into-the": ["ai-anthropomorphism", "phil-agre", "philosophy-of-ai", "technology", "ideas"],
-  "what-is-public-opposition-to-data": ["data-center-backlash", "cambridge-analytica", "big-tech-backlash", "technology", "politics"],
-  "these-fragments-zwei": ["reactionary-hipster", "david-foster-wallace", "john-pistelli", "ideas"],
-  "some-great-books-of-the-20th-century": ["rene-girard", "mimetic-desire", "book-lists", "ideas"],
+  "paglias-exaggerations": ["literary-criticism", "gender-and-sexuality", "ideas"],
+  "the-way-we-live-now": ["literary-criticism", "queer-culture", "culture", "ideas"],
+  "why-i-kicked-technology-out-of-my": ["higher-education", "technology-and-society", "technology"],
+  "from-outrage-to-disgust": ["politics"],
+  "will-this-college-dropout-be-alaskas": ["politics"],
+  "is-ai-good-for-religion": ["artificial-intelligence", "religion", "technology", "ideas"],
+  "life-of-m": ["fiction-and-the-novel", "literary-criticism", "ideas"],
+  "manufacturedcharges": ["media-and-publishing", "artificial-intelligence", "ideas", "technology"],
+  "look-on-my-outcomes-ye-mighty-and": ["higher-education", "politics"],
+  "two-new-ways-to-see-your-university": ["higher-education", "artificial-intelligence", "technology"],
+  "four-phases-of-culture": ["social-theory", "media-and-publishing", "ideas"],
+  "what-is-the-ethics-of-our-society": ["political-philosophy", "ideas", "politics"],
+  "an-increase-of-comprehension": ["intellectual-history", "literary-criticism", "ideas"],
+  "bankside-tate-modern-tracey-emin": ["visual-art", "culture"],
+  "discourse": ["literary-criticism", "film-and-pop-culture", "ideas", "culture"],
+  "at-the-foot-of-the-peak": ["literary-criticism", "ideas"],
+  "weekly-readings-238-083026-090626": ["literary-criticism", "artificial-intelligence", "ideas", "technology"],
+  "the-invisible-college-roberto-bolanos": ["literary-criticism", "ideas"],
+  "authorship-after-the-internet": ["media-and-publishing", "intellectual-history", "ideas", "technology"],
+  "why-this-is-hell-the-faust-myth": ["literary-criticism", "fiction-and-the-novel", "ideas"],
+  "andrew-holleran-gossip-dancer-from-the-dance": ["queer-culture", "culture"],
+  "market-nights": ["queer-culture", "culture"],
+  "i-sat-down-to-write-about-love-but": ["true-crime", "literary-criticism", "culture"],
+  "10-best-rom-coms-that-might-not-be": ["film-and-pop-culture", "culture"],
+  "ghost-stories-no-3": ["true-crime", "mental-health", "culture"],
+  "lindsay-clancys-madness-and-ours": ["true-crime", "mental-health", "culture", "politics"],
+  "social-shadows-and-social-light": ["social-theory", "artificial-intelligence", "technology", "ideas"],
+  "the-ages-of-schmeason": ["intellectual-history", "philosophy", "ideas"],
+  "anthropomorphism-is-built-into-the": ["artificial-intelligence", "philosophy", "technology", "ideas"],
+  "what-is-public-opposition-to-data": ["technology-and-society", "politics", "technology"],
+  "these-fragments-zwei": ["literary-criticism", "ideas"],
+  "some-great-books-of-the-20th-century": ["literary-criticism", "philosophy", "ideas"],
 };
