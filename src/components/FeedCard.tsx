@@ -74,6 +74,19 @@ export default function FeedCard({ post }: { post: Post }) {
         <span>{post.date}</span>
       </div>
 
+      {post.turns && post.turns.length > 0 && (
+        <div className="feed-card-turns-indicator">
+          <span>↩</span>
+          <span>
+            {post.turns.length === 1 ? "1 turn" : `${post.turns.length} turns`}
+            {" · last from "}
+            {post.turns[post.turns.length - 1].authorName}
+            {", "}
+            {post.turns[post.turns.length - 1].date.slice(0, 10)}
+          </span>
+        </div>
+      )}
+
       {post.thumbnailUrl && (
         <img src={post.thumbnailUrl} alt="" className="feed-card-image" />
       )}

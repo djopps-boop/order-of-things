@@ -6,6 +6,20 @@
 export type PostSource = "native" | "aggregated";
 export type AccessLevel = "free" | "paid";
 
+// An elevated, attributed response to a native (Sanity) post -- sits
+// visually between the post body and the comment section. See the Turns
+// feature handoff doc. Only ever attached to native posts: a `turn`
+// document in Sanity references a `post` document, and aggregated
+// (Substack RSS) posts aren't Sanity documents at all, so they can't have
+// turns.
+export interface Turn {
+  id: string;
+  authorName: string;
+  authorSlug: string;
+  body: string; // HTML, converted from Portable Text
+  date: string; // ISO datetime string
+}
+
 export interface Post {
   slug: string;
   title: string;
@@ -38,4 +52,14 @@ export interface Post {
   // Placeholder until Giscus is actually connected (needs the real GitHub
   // repo) — real counts come from GitHub Discussions once that's wired up.
   commentCount?: number;
+  // Turns (native posts only -- see the Turn interface above). Empty/absent
+  // for aggregated and fallback posts, and for native posts with no turns
+  // yet. Ordered oldest first, matching how they render on the post page.
+  turns?: Turn[];
+  // Feed/homepage sort key: the later of the post's own date and its most
+  // recent turn's date, so a post that gets a new turn bumps back toward
+  // the top of the feed instead of aging out by its original publish date
+  // alone. Falls back to `date` when absent (aggregated/fallback posts, or
+  // native posts with no turns).
+  lastActivity?: string;
 }

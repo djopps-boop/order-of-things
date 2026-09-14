@@ -52,6 +52,28 @@ export default async function PostPage({
         dangerouslySetInnerHTML={{ __html: post.body ?? "" }}
       />
 
+      {post.turns && post.turns.length > 0 && (
+        <section className="turns-section" aria-label="Turns">
+          <div className="turns-head">
+            <span>↩</span>
+            <span>{post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}</span>
+          </div>
+          {post.turns.map((turn) => (
+            <div key={turn.id} className="turn">
+              <div className="turn-byline">
+                <Link href={`/author/${turn.authorSlug}`}>{turn.authorName}</Link>
+                <span>·</span>
+                <span>{turn.date.slice(0, 10)}</span>
+              </div>
+              <div
+                className="turn-body rich-text"
+                dangerouslySetInnerHTML={{ __html: turn.body }}
+              />
+            </div>
+          ))}
+        </section>
+      )}
+
       <footer className="post-footer">
         <Link href={`/author/${post.authorSlug}`}>
           more from {post.authorName}

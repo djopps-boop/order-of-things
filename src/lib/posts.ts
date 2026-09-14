@@ -2,31 +2,35 @@ import { Post } from "./types";
 import { newsletterSources } from "./sources";
 import { fetchAllAggregatedPosts } from "./rss";
 import { toParagraphHtml } from "./htmlText";
+import { getNativePostsFromSanity } from "@/sanity/posts";
 
-// Native posts (written directly for the site) are still placeholder data —
-// that's Sanity's job (Step 2 of the build plan), not yet connected. Once
-// NEXT_PUBLIC_SANITY_PROJECT_ID is set, this should become a Sanity query.
-const nativePosts: Post[] = [
-  {
-    slug: "reading-history-sideways",
-    title: "Reading history sideways",
-    authorName: "Author Name",
-    authorSlug: "author-name",
-    date: "2026-09-01",
-    excerpt: toParagraphHtml(
-      "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding."
-    ),
-    body: toParagraphHtml(
-      "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding. The instinct to treat our own moment as uniquely urgent is not wrong exactly, but it obscures how ordinary the feeling is. Every generation has believed itself to be living through the hinge point, and most of them were, in some modest sense, correct — history has no shortage of hinges.\n\nWhat's harder to hold onto is the humility that comes from knowing you can't yet tell which kind of hinge this one is. That uncertainty isn't a failure of analysis. It's the actual condition of being inside events rather than looking back at them, and pretending otherwise is its own kind of vanity."
-    ),
-    tags: ["culture", "history"],
-    source: "native",
-    thumbnailUrl: "https://placehold.co/600x400?text=Featured+image",
-    permalink: "/post/reading-history-sideways",
-    featured: true,
-    commentCount: 4,
-  },
-];
+// Native posts now come from Sanity Studio (/studio) via
+// getNativePostsFromSanity() -- see src/sanity/posts.ts. This single post is
+// kept only as a build-safety fallback, the same role
+// FALLBACK_AGGREGATED_POST plays below: right after the Sanity project was
+// created there are zero published posts yet, and /post/[slug] (see
+// generateStaticParams there) still needs at least one native post so the
+// native-post template and styling stay visible/buildable. The moment a
+// real post is published in Studio, this stops appearing automatically.
+const FALLBACK_NATIVE_POST: Post = {
+  slug: "reading-history-sideways",
+  title: "Reading history sideways",
+  authorName: "Author Name",
+  authorSlug: "author-name",
+  date: "2026-09-01",
+  excerpt: toParagraphHtml(
+    "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding."
+  ),
+  body: toParagraphHtml(
+    "There is a peculiar comfort in reading history sideways — not for the verdict it renders on the present, but for the sense that the present, too, will eventually be read this way: strange, contingent, already receding. The instinct to treat our own moment as uniquely urgent is not wrong exactly, but it obscures how ordinary the feeling is. Every generation has believed itself to be living through the hinge point, and most of them were, in some modest sense, correct — history has no shortage of hinges.\n\nWhat's harder to hold onto is the humility that comes from knowing you can't yet tell which kind of hinge this one is. That uncertainty isn't a failure of analysis. It's the actual condition of being inside events rather than looking back at them, and pretending otherwise is its own kind of vanity."
+  ),
+  tags: ["culture", "history"],
+  source: "native",
+  thumbnailUrl: "https://placehold.co/600x400?text=Featured+image",
+  permalink: "/post/reading-history-sideways",
+  featured: true,
+  commentCount: 4,
+};
 
 // A static export ("output: export") requires every dynamic route to
 // prerender at least one path — /read/[slug] would have zero if literally
@@ -61,16 +65,26 @@ let cachedAllPosts: Promise<Post[]> | null = null;
 
 function loadAllPosts(): Promise<Post[]> {
   if (!cachedAllPosts) {
-    cachedAllPosts = fetchAllAggregatedPosts(newsletterSources).then(
-      (aggregated) => {
-        const resolvedAggregated =
-          aggregated.length > 0 ? aggregated : [FALLBACK_AGGREGATED_POST];
-        const all = [...nativePosts, ...resolvedAggregated];
-        return all.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-      }
-    );
+    cachedAllPosts = Promise.all([
+      getNativePostsFromSanity(),
+      fetchAllAggregatedPosts(newsletterSources),
+    ]).then(([nativeFromSanity, aggregated]) => {
+      const resolvedNative =
+        nativeFromSanity.length > 0 ? nativeFromSanity : [FALLBACK_NATIVE_POST];
+      const resolvedAggregated =
+        aggregated.length > 0 ? aggregated : [FALLBACK_AGGREGATED_POST];
+      const all = [...resolvedNative, ...resolvedAggregated];
+      // Sort by lastActivity (a post's own date, bumped forward by its
+      // most recent turn -- see Post.lastActivity) rather than plain
+      // publish date, so a post that gets a new turn rises back toward
+      // the top of the feed. Aggregated/fallback posts have no
+      // lastActivity and just sort by their own date, same as before.
+      return all.sort(
+        (a, b) =>
+          new Date(b.lastActivity ?? b.date).getTime() -
+          new Date(a.lastActivity ?? a.date).getTime()
+      );
+    });
   }
   return cachedAllPosts;
 }

@@ -750,6 +750,68 @@ a {
   text-decoration: underline;
 }
 
+/* --- turns (elevated, attributed responses -- sit between the post body
+   and the comment section; see the Turns feature handoff doc) --- */
+
+.turns-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dotted var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.turns-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.turn {
+  background: var(--surface-warm);
+  border: 1.5px dotted var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+
+.turn-byline {
+  display: flex;
+  gap: 8px;
+  font-family: "Libre Franklin", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.turn-byline a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.turn-body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.feed-card-turns-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Libre Franklin", sans-serif;
+  font-size: 12.5px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
 .read-thumbnail {
   width: 100%;
   max-width: 100%;

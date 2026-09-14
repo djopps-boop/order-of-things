@@ -2,6 +2,11 @@ import { defineField, defineType } from "sanity";
 
 // Matches src/lib/authors.ts (AuthorProfile): name, slug, bio, and a link to
 // their own Substack. Every post's byline resolves to one of these.
+//
+// `email` (added for the Turns feature) is used only by the "Take a Turn"
+// Studio document action (src/sanity/actions/takeATurn.ts) to map a logged-
+// in Studio user to their author document -- not shown anywhere on the
+// public site.
 export const author = defineType({
   name: "author",
   title: "Author",
@@ -25,6 +30,14 @@ export const author = defineType({
       title: "Bio",
       type: "text",
       description: "Shown at the top of this author's archive page",
+    }),
+    defineField({
+      name: "email",
+      title: "Email",
+      type: "string",
+      description:
+        "Used to match this author to their Studio login for the 'Take a Turn' action -- not displayed publicly",
+      validation: (Rule) => Rule.email(),
     }),
     defineField({
       name: "substackUrl",

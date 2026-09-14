@@ -185,3 +185,122 @@ export function sliceHtmlByWords(
 
   return { html: result, hasMore };
 }
+
+// --- Portable Text (Sanity native post bodies) -> HTML ---------------------
+// A minimal, dependency-free serializer for the small subset of Portable
+// Text the post/turn schemas actually allow (body is "array of block" only
+// -- no images or other custom object types inside it), so this doesn't
+// need to pull in a full Portable Text rendering library just to turn a
+// Studio-authored post or turn into the same HTML string shape every other
+// post already flows through.
+
+export interface PortableTextSpan {
+  _type: "span";
+  text: string;
+  marks?: string[];
+}
+
+export interface PortableTextMarkDef {
+  _key: string;
+  _type: string;
+  href?: string;
+}
+
+export interface PortableTextBlock {
+  _type: string;
+  style?: string;
+  listItem?: "bullet" | "number";
+  level?: number;
+  children?: PortableTextSpan[];
+  markDefs?: PortableTextMarkDef[];
+}
+
+const PORTABLE_TEXT_BLOCK_TAGS: Record<string, string> = {
+  h1: "h1",
+  h2: "h2",
+  h3: "h3",
+  h4: "h4",
+  h5: "h5",
+  h6: "h6",
+  blockquote: "blockquote",
+};
+
+const PORTABLE_TEXT_DECORATOR_TAGS: Record<string, string> = {
+  strong: "strong",
+  em: "em",
+  code: "code",
+  underline: "u",
+  "strike-through": "s",
+};
+
+function renderPortableTextSpans(
+  spans: PortableTextSpan[],
+  markDefs: PortableTextMarkDef[]
+): string {
+  return spans
+    .map((span) => {
+      let text = escapeHtml(span.text);
+      for (const mark of span.marks ?? []) {
+        const decoratorTag = PORTABLE_TEXT_DECORATOR_TAGS[mark];
+        if (decoratorTag) {
+          text = `<${decoratorTag}>${text}</${decoratorTag}>`;
+          continue;
+        }
+        const linkDef = markDefs.find(
+          (def) => def._key === mark && def._type === "link"
+        );
+        if (linkDef?.href) {
+          text = `<a href="${escapeHtml(
+            linkDef.href
+          )}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        }
+      }
+      return text;
+    })
+    .join("");
+}
+
+export function portableTextToHtml(blocks: PortableTextBlock[]): string {
+  if (!Array.isArray(blocks) || blocks.length === 0) return "";
+
+  let html = "";
+  let openListTag: "ul" | "ol" | null = null;
+
+  const closeList = () => {
+    if (openListTag) {
+      html += `</${openListTag}>`;
+      openListTag = null;
+    }
+  };
+
+  for (const block of blocks) {
+    if (block._type !== "block") continue; // schema only allows block anyway
+
+    if (block.listItem) {
+      const wantTag = block.listItem === "bullet" ? "ul" : "ol";
+      if (openListTag !== wantTag) {
+        closeList();
+        html += `<${wantTag}>`;
+        openListTag = wantTag;
+      }
+      const inner = renderPortableTextSpans(
+        block.children ?? [],
+        block.markDefs ?? []
+      );
+      html += `<li>${inner}</li>`;
+      continue;
+    }
+
+    closeList();
+    const tag = PORTABLE_TEXT_BLOCK_TAGS[block.style ?? "normal"] ?? "p";
+    const inner = renderPortableTextSpans(
+      block.children ?? [],
+      block.markDefs ?? []
+    );
+    if (inner.trim().length === 0) continue; // skip empty paragraphs
+    html += `<${tag}>${inner}</${tag}>`;
+  }
+  closeList();
+
+  return html;
+}
