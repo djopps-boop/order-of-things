@@ -754,6 +754,23 @@ a {
   text-decoration: underline;
 }
 
+/* Secondary "here's where this lives" reference on the standalone read
+   page for a free aggregated post, once shown in full -- deliberately not
+   styled as a CTA button (.paid-button), since there's nothing left to
+   continue reading elsewhere. */
+.original-source-link {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px dotted var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.original-source-link a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* --- turns (elevated, attributed responses -- sit between the post body
    and the comment section; see the Turns feature handoff doc) --- */
 

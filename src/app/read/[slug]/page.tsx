@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAggregatedPostBySlug, getAllPosts } from "@/lib/posts";
-import { WORD_CAP } from "@/lib/config";
-import { truncateHtmlByWords } from "@/lib/htmlText";
 import Comments from "@/components/Comments";
 
 export async function generateStaticParams() {
@@ -12,11 +10,15 @@ export async function generateStaticParams() {
     .map((p) => ({ slug: p.slug }));
 }
 
-// Internal preview page for aggregated (Substack) posts. This exists so the
-// main feed can stay image-free while a post still gets a place to show its
-// thumbnail (if the source post has one) before sending the reader out to
-// the actual Substack article. Native posts don't use this — they have
-// their own full page at /post/[slug].
+// Standalone page for aggregated (Substack) posts. Free posts render in
+// full here -- not the 600-word feed-card preview -- so a reader never has
+// to leave the site to finish a free piece; the original Substack post is
+// linked at the bottom as a secondary "here's where this lives" reference,
+// not a "continue reading" CTA, since there's nothing left to continue to.
+// Paid posts still only have the free teaser (rss.ts never fetches a paid
+// post's full body), so for those the Substack link remains the one way to
+// read the rest and stays styled as the primary action. Native posts don't
+// use this page at all -- they have their own full page at /post/[slug].
 export default async function ReadPage({
   params,
 }: {
@@ -29,12 +31,7 @@ export default async function ReadPage({
     notFound();
   }
 
-  // One contiguous slice from word 0, not the excerpt plus a separately
-  // sliced continuation -- otherwise a paragraph straddling word 150 would
-  // get an artificial break where the two fragments were stitched together.
-  const bodyText = post.body
-    ? truncateHtmlByWords(post.body, WORD_CAP)
-    : null;
+  const isPaid = post.access === "paid";
 
   return (
     <article className="read-page">
@@ -72,19 +69,28 @@ export default async function ReadPage({
 
       <div
         className="feed-card-excerpt rich-text"
-        dangerouslySetInnerHTML={{ __html: bodyText ? bodyText.html : post.excerpt }}
+        dangerouslySetInnerHTML={{
+          __html: post.body && !isPaid ? post.body : post.excerpt,
+        }}
       />
 
-      <a
-        href={post.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="paid-button"
-      >
-        {post.access === "paid"
-          ? "For paid subscribers — continue on Substack →"
-          : "Continue reading on Substack →"}
-      </a>
+      {isPaid ? (
+        <a
+          href={post.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="paid-button"
+        >
+          For paid subscribers — continue on Substack →
+        </a>
+      ) : (
+        <p className="original-source-link">
+          Originally published on{" "}
+          <a href={post.sourceUrl} target="_blank" rel="noopener noreferrer">
+            {post.newsletterName ?? "Substack"}
+          </a>
+        </p>
+      )}
 
       <Comments />
     </article>
