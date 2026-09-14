@@ -904,3 +904,139 @@ a {
   color: var(--muted);
   text-decoration: underline;
 }
+
+/* --- responsive: tablet/narrow-desktop --------------------------------
+   Below this, there isn't room for a 300px sidebar next to the feed
+   without cramping both, so the sidebar drops below the feed instead of
+   sitting beside it (DOM order already puts feed-main first, so this is
+   a plain reflow, not a reorder). --- */
+
+@media (max-width: 900px) {
+  .feed-layout {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+/* --- responsive: phone -------------------------------------------------
+   Common-sense stacked mobile layout: header stacks into rows instead of
+   one crowded line, tag-shortcut pills wrap instead of overflowing off
+   the right edge, and text/spacing sized for a single-post-title-per-line
+   than for a 1280px desktop feed. --- */
+
+@media (max-width: 640px) {
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px 20px 16px;
+  }
+
+  .site-main {
+    padding: 0 20px;
+  }
+
+  .site-footer {
+    padding: 20px 20px 32px;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* The vertical dividers separate items sitting on one line -- once the
+     header stacks into rows there's nothing left for them to divide. */
+  .header-divider {
+    display: none;
+  }
+
+  .wordmark {
+    font-size: 12px;
+    letter-spacing: 1.8px;
+  }
+
+  .wordmark-accent {
+    font-size: 28px;
+  }
+
+  .site-nav {
+    width: 100%;
+    gap: 12px 16px;
+  }
+
+  .tag-shortcuts {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .feed-layout {
+    gap: 28px;
+  }
+
+  .feed-main {
+    padding: 0 16px;
+  }
+
+  .feed-card {
+    padding: 20px 0;
+  }
+
+  .feed-card-title {
+    font-size: 19px;
+  }
+
+  .feed-card-title-big {
+    font-size: 22px;
+  }
+
+  .feed-card-meta {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .feed-card-excerpt {
+    font-size: 16px;
+    max-width: none;
+  }
+
+  .post-actions {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .post-page,
+  .read-page {
+    max-width: 100%;
+  }
+
+  .post-page h1,
+  .read-page h1 {
+    font-size: 1.5rem;
+  }
+
+  .turns-section {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+  }
+
+  .turn {
+    padding: 14px 16px;
+  }
+
+  .active-threads {
+    padding: 16px 18px;
+  }
+
+  .active-threads-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .sidebar {
+    gap: 28px;
+  }
+}
