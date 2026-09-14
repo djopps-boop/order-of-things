@@ -277,12 +277,16 @@ a {
   text-decoration: underline;
 }
 
+/* Natural aspect ratio, scaled to the column width -- no cap. A previous
+   max-height + object-fit: contain combo was meant to keep an unusually
+   tall image from dominating the feed, but on a wide enough window even a
+   normal landscape photo's scaled height could exceed that cap, triggering
+   letterboxing (the image shrinking further inside the box, with the
+   background color showing as bars) instead of just displaying at its
+   natural scaled size. */
 .feed-card-image {
   width: 100%;
   height: auto;
-  max-height: 480px;
-  object-fit: contain;
-  background: var(--border);
   border-radius: 4px;
   margin-top: 4px;
   display: block;
