@@ -117,16 +117,15 @@ export default function FeedCard({ post }: { post: Post }) {
             Read more
           </button>
         )}
-        {!isPaid && canExpand && expanded && isAggregated && post.sourceUrl && (
-          <a
-            href={post.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="read-more-link"
-          >
-            Continue reading on Substack →
-          </a>
-        )}
+        {!isPaid &&
+          canExpand &&
+          expanded &&
+          isAggregated &&
+          expandedText?.truncated && (
+            <Link href={post.permalink} className="read-more-link">
+              Continue reading →
+            </Link>
+          )}
         {!isPaid && canExpand && expanded && !isAggregated && (
           <Link href={post.permalink} className="read-more-link">
             Continue reading →
