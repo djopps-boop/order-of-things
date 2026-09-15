@@ -31,12 +31,6 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://blakeesmith.substack.com",
   },
   {
-    authorName: "Damon Linker",
-    authorSlug: "damon-linker",
-    newsletterName: "Notes from the Middleground",
-    url: "https://damonlinker.substack.com",
-  },
-  {
     authorName: "Mark Oppenheimer",
     authorSlug: "mark-oppenheimer",
     newsletterName: "Oppenheimer",
@@ -49,30 +43,11 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://www.woman-of-letters.com",
   },
   {
-    authorName: "Hollis Robbins",
-    authorSlug: "hollis-robbins",
-    newsletterName: "Anecdotal Value",
-    url: "https://hollisrobbinsanecdotal.substack.com",
-  },
-  {
-    authorName: "Sam Kahn",
-    authorSlug: "sam-kahn",
-    newsletterName: "Castalia",
-    url: "https://samkahn.substack.com",
-  },
-  {
     authorName: "Mary Jane Eyre",
     authorSlug: "mary-jane-eyre",
     newsletterName: "The extremely difficult realisation",
     url: "https://maryjaneeyre.substack.com",
     note: "Pen name — used as-is for the byline.",
-  },
-  {
-    authorName: "George Scialabba",
-    authorSlug: "george-scialabba",
-    newsletterName: "George Scialabba",
-    url: "https://georgescialabba594281.substack.com",
-    note: "Newsletter title unconfirmed — page requires JS to render, title not yet verified.",
   },
   {
     authorName: "Henry Begler",
@@ -97,12 +72,6 @@ export const newsletterSources: NewsletterSource[] = [
     authorSlug: "david-sessions",
     newsletterName: "Listening Sessions",
     url: "https://www.hdavidsessions.com",
-  },
-  {
-    authorName: "Sarah Hepola",
-    authorSlug: "sarah-hepola",
-    newsletterName: "Love Anyway",
-    url: "https://sarahhepola.substack.com",
   },
   {
     authorName: "Emmett Rensin",
