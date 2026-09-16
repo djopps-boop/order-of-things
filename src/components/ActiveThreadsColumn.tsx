@@ -1,16 +1,20 @@
 import Link from "next/link";
-import { getActiveThreads } from "@/lib/comments";
+import type { ActiveThread } from "@/lib/comments";
 
 // Persistent left-column counterpart to the inline <ActiveThreads /> flourish
 // in the feed itself: same underlying data (getActiveThreads, backed by the
 // GitHub Discussions fetch in lib/comments.ts), but always visible in the
 // scan path rather than tied to a single position in the feed. Homepage
 // only — see FeedLayout's optional leftColumn prop.
-export default async function ActiveThreadsColumn() {
-  const threads = await getActiveThreads();
-
-  if (threads.length === 0) return null;
-
+//
+// Takes `threads` as a prop rather than fetching internally: the caller
+// (page.tsx) needs to know *before* deciding whether to pass a leftColumn
+// to FeedLayout at all, since FeedLayout picks its grid (2-column vs.
+// 3-column) based on whether leftColumn is present — a component that
+// fetches its own data and might render null internally can't inform
+// that decision in time, and previously caused the whole layout to
+// collapse by one grid track whenever there were no active threads.
+export default function ActiveThreadsColumn({ threads }: { threads: ActiveThread[] }) {
   return (
     <aside className="active-threads-column">
       <h3 className="sidebar-head">
