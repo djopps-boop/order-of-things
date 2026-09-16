@@ -141,14 +141,21 @@ async function fetchDiscussions(): Promise<DiscussionNode[]> {
   return cachedDiscussions;
 }
 
-// Giscus discussion titles are the post's pathname verbatim (mapping=
-// "pathname"), so matching back to a post is a direct lookup against
-// each post's own permalink — no fuzzy matching needed.
+// Giscus discussion titles are the post's pathname per mapping="pathname",
+// but without the leading slash our own permalinks use (confirmed against
+// the real repo: discussion titles read "read/some-slug", not
+// "/read/some-slug") -- normalize both sides so the lookup isn't silently
+// order-of-things-repo-specific to whichever convention either side
+// happens to use.
+function normalizePath(path: string): string {
+  return path.replace(/^\/+/, "");
+}
+
 async function buildPermalinkIndex(): Promise<Map<string, { title: string; permalink: string }>> {
   const posts = await getAllPosts();
   const index = new Map<string, { title: string; permalink: string }>();
   for (const post of posts) {
-    index.set(post.permalink, { title: post.title, permalink: post.permalink });
+    index.set(normalizePath(post.permalink), { title: post.title, permalink: post.permalink });
   }
   return index;
 }
@@ -176,7 +183,7 @@ export async function getRecentComments(limit = 5): Promise<RecentComment[]> {
 
   const flattened: (RecentComment & { updatedAt: string })[] = [];
   for (const discussion of discussions) {
-    const post = permalinkIndex.get(discussion.title);
+    const post = permalinkIndex.get(normalizePath(discussion.title));
     if (!post) continue; // discussion doesn't map to a live post (e.g. removed contributor)
     for (const comment of discussion.comments.nodes) {
       if (!comment.author || !comment.bodyText.trim()) continue;
@@ -219,7 +226,7 @@ export async function getActiveThreads(limit = 5): Promise<ActiveThread[]> {
 
   const threads: ActiveThread[] = [];
   for (const discussion of discussions) {
-    const post = permalinkIndex.get(discussion.title);
+    const post = permalinkIndex.get(normalizePath(discussion.title));
     if (!post) continue;
     const latestComment = discussion.comments.nodes[0]; // sorted newest-first above
     threads.push({
