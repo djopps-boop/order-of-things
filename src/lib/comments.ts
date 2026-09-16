@@ -54,7 +54,7 @@ const DISCUSSIONS_QUERY = `
         nodes {
           title
           updatedAt
-          comments(first: 20, orderBy: { field: UPDATED_AT, direction: DESC }) {
+          comments(first: 20) {
             totalCount
             nodes {
               bodyText
@@ -113,9 +113,20 @@ async function fetchDiscussions(): Promise<DiscussionNode[]> {
     // Giscus creates the discussion lazily on first comment/reaction, so
     // in practice most posts simply won't have a discussion node at all
     // yet; this filter just also covers the rare zero-comment edge case.
-    cachedDiscussions = (json.data?.repository?.discussions?.nodes ?? []).filter(
-      (d) => d.comments.totalCount > 0
-    );
+    //
+    // GitHub's API can sort discussions by updatedAt but not comments
+    // within a discussion (no orderBy arg on that field), so newest-first
+    // ordering of each discussion's own comments has to happen here
+    // instead of in the query.
+    cachedDiscussions = (json.data?.repository?.discussions?.nodes ?? [])
+      .filter((d) => d.comments.totalCount > 0)
+      .map((d) => ({
+        ...d,
+        comments: {
+          ...d.comments,
+          nodes: [...d.comments.nodes].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
+        },
+      }));
   } catch (err) {
     console.warn(
       `[comments] could not fetch GitHub Discussions: ${
@@ -210,7 +221,7 @@ export async function getActiveThreads(limit = 5): Promise<ActiveThread[]> {
   for (const discussion of discussions) {
     const post = permalinkIndex.get(discussion.title);
     if (!post) continue;
-    const latestComment = discussion.comments.nodes[0]; // query already orders DESC
+    const latestComment = discussion.comments.nodes[0]; // sorted newest-first above
     threads.push({
       postTitle: post.title,
       postHref: post.permalink,
