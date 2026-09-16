@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getTagCounts, getArchiveIndex, getRecentPosts } from "@/lib/posts";
 import { getRecentComments } from "@/lib/comments";
 import { newsletterSources } from "@/lib/sources";
+import ActivitySparkline from "./ActivitySparkline";
+import OrnamentalDivider from "./OrnamentalDivider";
 
 // Blogroll is manually curated — not derived from the aggregation list.
 // Colors are a small fixed palette, cycled, matching the design's
@@ -94,7 +96,7 @@ export default async function Sidebar() {
   const maxCount = Math.max(1, ...tagCounts.map((t) => t.count));
   const archive = await getArchiveIndex();
   const recentPosts = await getRecentPosts();
-  const recentComments = getRecentComments();
+  const recentComments = await getRecentComments();
 
   return (
     <aside className="sidebar">
@@ -124,9 +126,7 @@ export default async function Sidebar() {
         </form>
       </section>
 
-      <div className="sidebar-graphic-slot" aria-hidden="true">
-        Graphic — TBD
-      </div>
+      <OrnamentalDivider />
 
       <section className="sidebar-section">
         <h3 className="sidebar-head">
@@ -161,9 +161,7 @@ export default async function Sidebar() {
         </div>
       </section>
 
-      <div className="sidebar-graphic-slot" aria-hidden="true">
-        Graphic — TBD
-      </div>
+      <ActivitySparkline />
 
       <section className="sidebar-section">
         <h3 className="sidebar-head">
@@ -188,9 +186,7 @@ export default async function Sidebar() {
         </div>
       </section>
 
-      <div className="sidebar-graphic-slot" aria-hidden="true">
-        Graphic — TBD
-      </div>
+      <OrnamentalDivider />
 
       <section className="sidebar-section">
         <h3 className="sidebar-head">

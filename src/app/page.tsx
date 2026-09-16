@@ -1,13 +1,14 @@
 import FeedLayout from "@/components/FeedLayout";
 import FeedCard from "@/components/FeedCard";
 import ActiveThreads from "@/components/ActiveThreads";
+import ActiveThreadsColumn from "@/components/ActiveThreadsColumn";
 import { getAllPosts } from "@/lib/posts";
 
 export default async function HomePage() {
   const posts = await getAllPosts();
 
   return (
-    <FeedLayout>
+    <FeedLayout leftColumn={<ActiveThreadsColumn />}>
       {posts.map((post, i) => (
         <div key={post.slug}>
           <FeedCard post={post} />

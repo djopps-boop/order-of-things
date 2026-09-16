@@ -4,8 +4,8 @@ import { getActiveThreads } from "@/lib/comments";
 // A kottke.org-style flourish: posts with recent comment activity, meant to
 // sit inline in the main feed column, right after the newest post and
 // before the rest of the feed continues.
-export default function ActiveThreads() {
-  const threads = getActiveThreads();
+export default async function ActiveThreads() {
+  const threads = await getActiveThreads();
 
   if (threads.length === 0) return null;
 

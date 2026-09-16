@@ -206,6 +206,50 @@ a {
   align-items: start;
 }
 
+.feed-layout--with-left {
+  grid-template-columns: 200px minmax(0, 1fr) 300px;
+}
+
+/* --- active threads: left column --- */
+
+.active-threads-column {
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+
+.active-threads-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.active-threads-column-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--border);
+}
+
+.active-threads-column-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.active-threads-column-title {
+  font-family: "Source Serif 4", serif;
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+.active-threads-column-meta {
+  font-family: "Libre Franklin", sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .feed-main {
   min-width: 0;
   display: flex;
@@ -577,7 +621,6 @@ a {
 
 .sidebar-graphic-slot {
   width: 100%;
-  height: 110px;
   border-radius: 8px;
   background: var(--surface-warm);
   color: var(--muted);
@@ -586,6 +629,27 @@ a {
   justify-content: center;
   font-family: "Libre Franklin", sans-serif;
   font-size: 12px;
+}
+
+.sidebar-ornament {
+  height: 40px;
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.sidebar-sparkline {
+  height: 56px;
+  gap: 4px;
+  align-items: flex-end;
+  padding: 0 12px;
+}
+
+.sidebar-sparkline-bar {
+  flex: 1;
+  max-width: 8px;
+  border-radius: 2px 2px 0 0;
+  background: var(--muted);
+  opacity: 0.55;
 }
 
 .contributor-list,
@@ -927,15 +991,24 @@ a {
 }
 
 /* --- responsive: tablet/narrow-desktop --------------------------------
-   Below this, there isn't room for a 300px sidebar next to the feed
-   without cramping both, so the sidebar drops below the feed instead of
-   sitting beside it (DOM order already puts feed-main first, so this is
-   a plain reflow, not a reorder). --- */
+   Below this, there isn't room for a 300px sidebar (or the homepage's
+   extra 200px left column) next to the feed without cramping everything,
+   so both drop into a single stack instead of sitting beside the feed.
+   On the homepage this means Active Threads renders above the feed on
+   mobile (leftColumn comes first in FeedLayout's DOM order) rather than
+   below it like the right sidebar — deliberate, not an artifact: it's
+   still the earliest thing in the scan path, which is the whole point
+   of giving it a dedicated column in the first place. --- */
 
 @media (max-width: 900px) {
-  .feed-layout {
+  .feed-layout,
+  .feed-layout--with-left {
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+
+  .active-threads-column {
+    position: static;
   }
 }
 

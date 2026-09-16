@@ -1,7 +1,146 @@
-// Placeholder — a "recent comments" module needs an actual comment platform
-// behind it (see the open decision on Comments.tsx: embedded third-party vs.
-// custom Sanity-backed). Once that's chosen, this gets replaced by a real
-// query against whatever store/API that platform exposes, ordered by date.
+// Real data source: Giscus stores every comment as a GitHub Discussion
+// (mapping="pathname", category "Announcements" — see Comments.tsx) on
+// this same repo. We read that back via GitHub's GraphQL API at build
+// time, matched against our own post list by pathname, so both the
+// homepage "Active Threads" column and the "Recent Comments" sidebar
+// widget are driven by one shared fetch instead of two.
+//
+// Never throws — same policy as fetchAggregatedPosts() in rss.ts. A
+// missing token, a rate limit, or GitHub being down just means these two
+// widgets render empty for that build; it must not take the whole site
+// down.
+
+import { getAllPosts } from "./posts";
+
+const REPO_OWNER = "djopps-boop";
+const REPO_NAME = "order-of-things";
+// Matches GISCUS_CONFIG.categoryId in Comments.tsx — the "Announcements"
+// category Giscus is scoped to. Kept as a separate constant here (rather
+// than imported) since Comments.tsx is a client component and this is a
+// server-only data module.
+const DISCUSSION_CATEGORY_ID = "DIC_kwDOUQeJVM4DFBv2";
+const FETCH_TIMEOUT_MS = 10_000;
+
+interface DiscussionCommentNode {
+  bodyText: string;
+  updatedAt: string;
+  author: { login: string } | null;
+}
+
+interface DiscussionNode {
+  title: string; // the post's pathname, per mapping="pathname"
+  updatedAt: string;
+  comments: {
+    totalCount: number;
+    nodes: DiscussionCommentNode[];
+  };
+}
+
+interface DiscussionsResponse {
+  data?: {
+    repository?: {
+      discussions?: {
+        nodes: DiscussionNode[];
+      };
+    };
+  };
+  errors?: { message: string }[];
+}
+
+const DISCUSSIONS_QUERY = `
+  query RepoDiscussions($owner: String!, $name: String!, $categoryId: ID) {
+    repository(owner: $owner, name: $name) {
+      discussions(first: 50, categoryId: $categoryId, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        nodes {
+          title
+          updatedAt
+          comments(first: 20, orderBy: { field: UPDATED_AT, direction: DESC }) {
+            totalCount
+            nodes {
+              bodyText
+              updatedAt
+              author { login }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+let cachedDiscussions: DiscussionNode[] | null = null;
+
+async function fetchDiscussions(): Promise<DiscussionNode[]> {
+  if (cachedDiscussions) return cachedDiscussions;
+
+  const token = process.env.GITHUB_DISCUSSIONS_TOKEN;
+  if (!token) {
+    console.warn(
+      "[comments] GITHUB_DISCUSSIONS_TOKEN not set — Active Threads / Recent Comments will be empty for this build."
+    );
+    cachedDiscussions = [];
+    return cachedDiscussions;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const res = await fetch("https://api.github.com/graphql", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "User-Agent": "OrderOfThingsAggregator/1.0",
+      },
+      body: JSON.stringify({
+        query: DISCUSSIONS_QUERY,
+        variables: { owner: REPO_OWNER, name: REPO_NAME, categoryId: DISCUSSION_CATEGORY_ID },
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`GitHub GraphQL responded ${res.status}`);
+    }
+
+    const json = (await res.json()) as DiscussionsResponse;
+    if (json.errors?.length) {
+      throw new Error(json.errors.map((e) => e.message).join("; "));
+    }
+
+    // Discussions with zero comments carry no signal for either widget —
+    // Giscus creates the discussion lazily on first comment/reaction, so
+    // in practice most posts simply won't have a discussion node at all
+    // yet; this filter just also covers the rare zero-comment edge case.
+    cachedDiscussions = (json.data?.repository?.discussions?.nodes ?? []).filter(
+      (d) => d.comments.totalCount > 0
+    );
+  } catch (err) {
+    console.warn(
+      `[comments] could not fetch GitHub Discussions: ${
+        err instanceof Error ? err.message : err
+      }`
+    );
+    cachedDiscussions = [];
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  return cachedDiscussions;
+}
+
+// Giscus discussion titles are the post's pathname verbatim (mapping=
+// "pathname"), so matching back to a post is a direct lookup against
+// each post's own permalink — no fuzzy matching needed.
+async function buildPermalinkIndex(): Promise<Map<string, { title: string; permalink: string }>> {
+  const posts = await getAllPosts();
+  const index = new Map<string, { title: string; permalink: string }>();
+  for (const post of posts) {
+    index.set(post.permalink, { title: post.title, permalink: post.permalink });
+  }
+  return index;
+}
 
 export interface RecentComment {
   authorName: string;
@@ -10,52 +149,76 @@ export interface RecentComment {
   snippet: string;
 }
 
-const sampleRecentComments: RecentComment[] = [
-  {
-    authorName: "[Commenter name]",
-    postTitle: "Reading history sideways",
-    postHref: "/post/reading-history-sideways",
-    snippet: "[placeholder comment excerpt]",
-  },
-  {
-    authorName: "[Commenter name]",
-    postTitle: "An example free newsletter post",
-    postHref: "/read/aggregated-free-example",
-    snippet: "[placeholder comment excerpt]",
-  },
-];
+const SNIPPET_MAX_LENGTH = 140;
 
-export function getRecentComments(limit = 5): RecentComment[] {
-  return sampleRecentComments.slice(0, limit);
+function toSnippet(bodyText: string): string {
+  const trimmed = bodyText.trim().replace(/\s+/g, " ");
+  if (trimmed.length <= SNIPPET_MAX_LENGTH) return trimmed;
+  return `${trimmed.slice(0, SNIPPET_MAX_LENGTH).trimEnd()}…`;
 }
 
-// "Active Threads" (a kottke.org flourish): posts with recent comment
-// activity, shown just below the newest post on the homepage. Same
-// placeholder caveat as getRecentComments — needs the real Giscus/GitHub
-// Discussions data once the repo exists.
+export async function getRecentComments(limit = 5): Promise<RecentComment[]> {
+  const [discussions, permalinkIndex] = await Promise.all([
+    fetchDiscussions(),
+    buildPermalinkIndex(),
+  ]);
+
+  const flattened: (RecentComment & { updatedAt: string })[] = [];
+  for (const discussion of discussions) {
+    const post = permalinkIndex.get(discussion.title);
+    if (!post) continue; // discussion doesn't map to a live post (e.g. removed contributor)
+    for (const comment of discussion.comments.nodes) {
+      if (!comment.author || !comment.bodyText.trim()) continue;
+      flattened.push({
+        authorName: comment.author.login,
+        postTitle: post.title,
+        postHref: post.permalink,
+        snippet: toSnippet(comment.bodyText),
+        updatedAt: comment.updatedAt,
+      });
+    }
+  }
+
+  flattened.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  return flattened.slice(0, limit).map((c) => ({
+    authorName: c.authorName,
+    postTitle: c.postTitle,
+    postHref: c.postHref,
+    snippet: c.snippet,
+  }));
+}
+
+// "Active Threads": posts ranked by how recently they got a comment (the
+// clearer "come join in, it's live" signal vs. raw comment count), shown
+// both inline in the homepage feed and in the persistent left sidebar
+// column.
 
 export interface ActiveThread {
   postTitle: string;
   postHref: string;
   commentCount: number;
-  latestActivity: string; // display string, e.g. a relative or ISO date
+  latestActivity: string; // ISO datetime of the most recent comment
 }
 
-const sampleActiveThreads: ActiveThread[] = [
-  {
-    postTitle: "Reading history sideways",
-    postHref: "/post/reading-history-sideways",
-    commentCount: 6,
-    latestActivity: "2026-09-02",
-  },
-  {
-    postTitle: "An example free newsletter post",
-    postHref: "/read/aggregated-free-example",
-    commentCount: 2,
-    latestActivity: "2026-08-29",
-  },
-];
+export async function getActiveThreads(limit = 5): Promise<ActiveThread[]> {
+  const [discussions, permalinkIndex] = await Promise.all([
+    fetchDiscussions(),
+    buildPermalinkIndex(),
+  ]);
 
-export function getActiveThreads(limit = 5): ActiveThread[] {
-  return sampleActiveThreads.slice(0, limit);
+  const threads: ActiveThread[] = [];
+  for (const discussion of discussions) {
+    const post = permalinkIndex.get(discussion.title);
+    if (!post) continue;
+    const latestComment = discussion.comments.nodes[0]; // query already orders DESC
+    threads.push({
+      postTitle: post.title,
+      postHref: post.permalink,
+      commentCount: discussion.comments.totalCount,
+      latestActivity: latestComment?.updatedAt ?? discussion.updatedAt,
+    });
+  }
+
+  threads.sort((a, b) => (a.latestActivity < b.latestActivity ? 1 : -1));
+  return threads.slice(0, limit);
 }
