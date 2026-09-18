@@ -99,4 +99,22 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://gnocchiccodices.substack.com",
     note: "Pen name — used as-is for the byline.",
   },
+  {
+    authorName: "Jeffrey Lawrence",
+    authorSlug: "jeffrey-lawrence",
+    newsletterName: "Avenues of the Americas",
+    url: "https://avenuesofamericas.substack.com",
+  },
+  {
+    authorName: "Paul Franz",
+    authorSlug: "paul-franz",
+    newsletterName: "ashes and sparks",
+    url: "https://ashesandsparks.substack.com",
+  },
+  {
+    authorName: "George Scialabba",
+    authorSlug: "george-scialabba",
+    newsletterName: "Lingua Franca",
+    url: "https://georgescialabba594281.substack.com",
+  },
 ];
