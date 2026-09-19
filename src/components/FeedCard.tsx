@@ -12,6 +12,26 @@ import {
 import { getSourceLabel } from "@/lib/posts";
 import { newsletterSources } from "@/lib/sources";
 
+// A simple, original three-bar mark evoking Substack's own icon shape --
+// not a reproduction of their logo file -- used in white ("knockout") on
+// the brand-orange subscribe button below, since the button's fill is
+// Substack's own accent color rather than the site's.
+function SubstackMark() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="4" rx="1" fill="white" />
+      <rect x="3" y="10" width="18" height="4" rx="1" fill="white" />
+      <rect x="3" y="17" width="12" height="4" rx="1" fill="white" />
+    </svg>
+  );
+}
+
 export default function FeedCard({ post }: { post: Post }) {
   const [expanded, setExpanded] = useState(false);
   const [faved, setFaved] = useState(false);
@@ -149,11 +169,7 @@ export default function FeedCard({ post }: { post: Post }) {
                 rel="noopener noreferrer"
                 className="subscribe-button subscribe-button-inline"
               >
-                <img
-                  src="/brand/substack-mark.png"
-                  alt=""
-                  className="subscribe-button-mark"
-                />
+                <SubstackMark />
                 <span>
                   Subscribe to {post.authorName} at {pronoun} Substack
                 </span>

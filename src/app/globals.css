@@ -482,25 +482,24 @@ a {
   gap: 6px;
 }
 
-/* Reuses the paid-button treatment (same shape, same weight), but as a
-   white pill with a hairline border rather than a solid fill -- this
-   lets the actual approved Substack logo (orange, unaltered, from their
-   published brand assets) sit on the button as itself, since the logo's
-   own transparent background only reads correctly against a light
-   surface, not against a matching-color fill. */
+/* Reuses the paid-button treatment (same shape, same weight), but filled
+   with Substack's own brand orange (#FF6719, per their published brand
+   colors) rather than the site's own accent -- since clicking this button
+   takes the reader to Substack specifically, the color says where they're
+   going before they even read the label. */
 .subscribe-button {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 700;
   font-size: 13.5px;
-  color: var(--ink);
-  background: #fff;
-  border: 1px solid var(--border);
+  color: #fff;
+  background: #FF6719;
+  border: none;
   border-radius: 4px;
-  padding: 8px 16px 8px 12px;
+  padding: 9px 16px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* Sits inline between the post's 2nd and 3rd paragraphs (see
@@ -512,18 +511,7 @@ a {
    the primary action on the card. */
 .subscribe-button-inline {
   border-radius: 999px;
-  padding: 8px 20px 8px 14px;
-}
-
-/* The logo file itself is Substack's approved unaltered asset (orange
-   mark, transparent background) -- placed as-is, with no recoloring, per
-   their brand guidelines. It reads correctly here because the button
-   underneath it is a light, near-white surface, not a color-matched fill. */
-.subscribe-button-mark {
-  width: 16px;
-  height: 16px;
-  display: block;
-  flex-shrink: 0;
+  padding: 9px 20px;
 }
 
 /* .feed-card is a flex column, so a lone child here would otherwise
