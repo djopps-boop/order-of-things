@@ -13,21 +13,21 @@ import { getSourceLabel } from "@/lib/posts";
 import { newsletterSources } from "@/lib/sources";
 
 // A simple, original three-bar mark evoking Substack's own icon shape --
-// not a reproduction of their logo file -- used in white ("knockout") on
-// the brand-orange subscribe button below, since the button's fill is
-// Substack's own accent color rather than the site's.
+// not a reproduction of their logo file -- rendered in the same warm
+// brown as the button's text, since the button's background is now a
+// light orange-to-yellow gradient rather than a solid dark fill.
 function SubstackMark() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="15"
+      height="15"
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
     >
-      <rect x="3" y="3" width="18" height="4" rx="1" fill="white" />
-      <rect x="3" y="10" width="18" height="4" rx="1" fill="white" />
-      <rect x="3" y="17" width="12" height="4" rx="1" fill="white" />
+      <rect x="3" y="3" width="18" height="4" rx="1" fill="#7A3B12" />
+      <rect x="3" y="10" width="18" height="4" rx="1" fill="#7A3B12" />
+      <rect x="3" y="17" width="12" height="4" rx="1" fill="#7A3B12" />
     </svg>
   );
 }
