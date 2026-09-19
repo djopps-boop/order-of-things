@@ -94,7 +94,7 @@ function loadAllPosts(): Promise<Post[]> {
 // originating newsletter, since that's where the post actually lives.
 export function getSourceLabel(post: Post): string {
   if (post.source === "native") return "The Order of Things";
-  return `${post.newsletterName ?? "Substack"} (Substack)`;
+  return post.newsletterName ?? "Substack";
 }
 
 export async function getAllPosts(): Promise<Post[]> {

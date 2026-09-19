@@ -477,8 +477,7 @@ a {
 /* Reuses the paid-button treatment (same shape, same weight) but in the
    site's other accent color, so the two read as siblings -- both external
    commitments the reader is making -- without being mistaken for the same
-   action. Appears once a post is expanded, next to "Continue reading"
-   rather than replacing it. */
+   action. */
 .subscribe-button {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 700;
@@ -492,6 +491,15 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Sits inline between the post's 2nd and 3rd paragraphs (see
+   splitHtmlAfterParagraphs in FeedCard.tsx) rather than at the bottom of
+   the action row -- these margins give it breathing room from the
+   paragraphs above and below without matching them exactly (it's a CTA,
+   not body copy). */
+.subscribe-button-inline {
+  margin: 4px 0 10px;
 }
 
 .read-more-link {

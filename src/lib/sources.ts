@@ -15,6 +15,10 @@ export interface NewsletterSource {
   newsletterName: string;
   url: string;
   note?: string;
+  // Used in the per-post "Subscribe to [name] at [pronoun] Substack" CTA.
+  // Defaults to "his" when absent, since that covers most of the current
+  // list -- only set explicitly for contributors who use "her".
+  pronoun?: "his" | "her";
 }
 
 export const newsletterSources: NewsletterSource[] = [
@@ -41,6 +45,7 @@ export const newsletterSources: NewsletterSource[] = [
     authorSlug: "naomi-kanakia",
     newsletterName: "Woman of Letters",
     url: "https://www.woman-of-letters.com",
+    pronoun: "her",
   },
   {
     authorName: "Mary Jane Eyre",
@@ -48,6 +53,7 @@ export const newsletterSources: NewsletterSource[] = [
     newsletterName: "The extremely difficult realisation",
     url: "https://maryjaneeyre.substack.com",
     note: "Pen name — used as-is for the byline.",
+    pronoun: "her",
   },
   {
     authorName: "Henry Begler",
@@ -66,6 +72,7 @@ export const newsletterSources: NewsletterSource[] = [
     authorSlug: "julianne-werlin",
     newsletterName: "Life and Letters",
     url: "https://lifeandletters.substack.com",
+    pronoun: "her",
   },
   {
     authorName: "David Sessions",

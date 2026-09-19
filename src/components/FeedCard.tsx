@@ -1,9 +1,14 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import { Post } from "@/lib/types";
 import { EXCERPT_WORD_CAP, WORD_CAP } from "@/lib/config";
-import { htmlWordCount, truncateHtmlByWords } from "@/lib/htmlText";
+import {
+  htmlWordCount,
+  truncateHtmlByWords,
+  splitHtmlAfterParagraphs,
+} from "@/lib/htmlText";
 import { getSourceLabel } from "@/lib/posts";
 import { newsletterSources } from "@/lib/sources";
 
@@ -11,45 +16,98 @@ export default function FeedCard({ post }: { post: Post }) {
   const [expanded, setExpanded] = useState(false);
   const [faved, setFaved] = useState(false);
   const [copied, setCopied] = useState(false);
+
   const isAggregated = post.source === "aggregated";
   const isPaid = isAggregated && post.access === "paid";
-  const canExpand = !isPaid && !!post.body && htmlWordCount(post.body) > EXCERPT_WORD_CAP;
-  const substackUrl = newsletterSources.find((s) => s.authorSlug === post.authorSlug)?.url;
-  const expandedText = post.body ? truncateHtmlByWords(post.body, WORD_CAP) : null;
+  const canExpand =
+    !isPaid && !!post.body && htmlWordCount(post.body) > EXCERPT_WORD_CAP;
+  // Every contributor has an entry in sources.ts (that's how the RSS
+  // aggregation finds their feed in the first place), so this covers
+  // native and aggregated posts alike -- the subscribe link always points
+  // at the person's own Substack home, not the specific post's URL.
+  const source = newsletterSources.find((s) => s.authorSlug === post.authorSlug);
+  const substackUrl = source?.url;
+  const pronoun = source?.pronoun ?? "his";
+  // Re-slicing from word 0 (rather than stitching the excerpt together with
+  // a separate word-150-to-600 fragment) means a paragraph that happens to
+  // straddle word 150 stays one continuous <p> instead of getting an
+  // artificial break where the two fragments were joined.
+  const expandedText = post.body
+    ? truncateHtmlByWords(post.body, WORD_CAP)
+    : null;
+  // The subscribe CTA sits inline between the 2nd and 3rd paragraphs of the
+  // expanded post rather than at the bottom, so it's seen while attention
+  // is still on the writing rather than after a reader's already decided
+  // whether to keep reading. Posts with 2 or fewer paragraphs just get the
+  // whole thing in `before` (see splitHtmlAfterParagraphs), so the CTA ends
+  // up appended at the end for those rather than not appearing at all.
+  const expandedSplit = expandedText
+    ? splitHtmlAfterParagraphs(expandedText.html, 2)
+    : null;
 
   async function handleShare() {
-    const url = typeof window !== "undefined" ? window.location.origin + post.permalink : post.permalink;
+    const url =
+      typeof window !== "undefined"
+        ? window.location.origin + post.permalink
+        : post.permalink;
+
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: post.title, url });
         return;
-      } catch {}
+      } catch {
+        // fall through to clipboard copy
+      }
     }
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    } catch {
+      // clipboard unavailable — no-op
+    }
   }
 
   return (
     <article className="feed-card">
       <div className="feed-card-tags">
         {post.tags.map((tag) => (
-          <Link key={tag} href={`/tag/${tag}`} className="feed-card-tag">{tag}</Link>
+          <Link key={tag} href={`/tag/${tag}`} className="feed-card-tag">
+            {tag}
+          </Link>
         ))}
-        {isAggregated && <span className="feed-card-via">via Substack</span>}
+        {isAggregated && substackUrl && (
+          <a
+            href={substackUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feed-card-via"
+          >
+            via Substack
+          </a>
+        )}
       </div>
-      <h2 className={post.featured ? "feed-card-title feed-card-title-big" : "feed-card-title"}>
+
+      <h2
+        className={
+          post.featured ? "feed-card-title feed-card-title-big" : "feed-card-title"
+        }
+      >
         <Link href={post.permalink}>{post.title}</Link>
       </h2>
+
       <div className="feed-card-meta">
         <Link href={`/author/${post.authorSlug}`}>{post.authorName}</Link>
         <span>·</span>
-        <span>{getSourceLabel(post)}</span>
+        {isAggregated ? (
+          <em>{getSourceLabel(post)}</em>
+        ) : (
+          <span>{getSourceLabel(post)}</span>
+        )}
         <span>·</span>
         <span>{post.date}</span>
       </div>
+
       {post.turns && post.turns.length > 0 && (
         <div className="feed-card-turns-indicator">
           <span>↩</span>
@@ -62,13 +120,46 @@ export default function FeedCard({ post }: { post: Post }) {
           </span>
         </div>
       )}
-      {post.thumbnailUrl && <img src={post.thumbnailUrl} alt="" className="feed-card-image" />}
+
+      {post.thumbnailUrl && (
+        <img src={post.thumbnailUrl} alt="" className="feed-card-image" />
+      )}
+
       {!expanded && (
-        <div className="feed-card-excerpt rich-text" dangerouslySetInnerHTML={{ __html: post.excerpt }} />
+        <div
+          className="feed-card-excerpt rich-text"
+          dangerouslySetInnerHTML={{ __html: post.excerpt }}
+        />
       )}
-      {expanded && expandedText && (
-        <div className="feed-card-excerpt feed-card-expanded-text rich-text" dangerouslySetInnerHTML={{ __html: expandedText.html }} />
+
+      {expanded && expandedText && expandedSplit && (
+        <>
+          <div
+            className="feed-card-excerpt feed-card-expanded-text rich-text"
+            dangerouslySetInnerHTML={{ __html: expandedSplit.before }}
+          />
+          {substackUrl && (
+            <a
+              href={substackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="subscribe-button subscribe-button-inline"
+            >
+              <span>✉</span>
+              <span>
+                Subscribe to {post.authorName} at {pronoun} Substack
+              </span>
+            </a>
+          )}
+          {expandedSplit.after && (
+            <div
+              className="feed-card-excerpt feed-card-expanded-text rich-text"
+              dangerouslySetInnerHTML={{ __html: expandedSplit.after }}
+            />
+          )}
+        </>
       )}
+
       <div className="feed-card-action-row">
         {isPaid && (
           <Link href={post.permalink} className="paid-button">
@@ -77,23 +168,33 @@ export default function FeedCard({ post }: { post: Post }) {
           </Link>
         )}
         {!isPaid && canExpand && !expanded && (
-          <button className="read-more-link" onClick={() => setExpanded(true)}>Read more</button>
+          <button className="read-more-link" onClick={() => setExpanded(true)}>
+            Read more
+          </button>
         )}
-        {!isPaid && canExpand && expanded && isAggregated && expandedText?.truncated && (
-          <Link href={post.permalink} className="read-more-link">Continue reading →</Link>
-        )}
+        {!isPaid &&
+          canExpand &&
+          expanded &&
+          isAggregated &&
+          expandedText?.truncated && (
+            <Link href={post.permalink} className="read-more-link">
+              Continue reading →
+            </Link>
+          )}
         {!isPaid && canExpand && expanded && !isAggregated && (
-          <Link href={post.permalink} className="read-more-link">Continue reading →</Link>
-        )}
-        {expanded && substackUrl && (
-          <a href={substackUrl} target="_blank" rel="noopener noreferrer" className="subscribe-button">
-            <span>✉</span>
-            <span>Subscribe to {post.authorName} at their Substack</span>
-          </a>
+          <Link href={post.permalink} className="read-more-link">
+            Continue reading →
+          </Link>
         )}
       </div>
+
       <div className="post-actions">
-        <button className={faved ? "post-action post-action-faved" : "post-action"} onClick={() => setFaved((f) => !f)}>
+        <button
+          className={
+            faved ? "post-action post-action-faved" : "post-action"
+          }
+          onClick={() => setFaved((f) => !f)}
+        >
           <span>{faved ? "★" : "☆"}</span>
           <span>Fave</span>
         </button>

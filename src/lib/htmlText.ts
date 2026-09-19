@@ -186,6 +186,35 @@ export function sliceHtmlByWords(
   return { html: result, hasMore };
 }
 
+// Splits well-formed HTML after the Nth top-level `</p>` closing tag, so a
+// caller can insert something (e.g. an inline CTA) between two paragraphs
+// of rendered content. If the content has fewer than `paragraphCount`
+// paragraphs, everything goes in `before` and `after` is empty -- the
+// caller's insertion point just ends up at the end, rather than throwing
+// or guessing at a fallback position.
+export function splitHtmlAfterParagraphs(
+  html: string,
+  paragraphCount: number
+): { before: string; after: string } {
+  if (!html) return { before: "", after: "" };
+
+  const closeTag = "</p>";
+  const lower = html.toLowerCase();
+  let idx = -1;
+  let searchFrom = 0;
+
+  for (let i = 0; i < paragraphCount; i++) {
+    const found = lower.indexOf(closeTag, searchFrom);
+    if (found === -1) {
+      return { before: html, after: "" };
+    }
+    idx = found + closeTag.length;
+    searchFrom = idx;
+  }
+
+  return { before: html.slice(0, idx), after: html.slice(idx) };
+}
+
 // --- Portable Text (Sanity native post bodies) -> HTML ---------------------
 // A minimal, dependency-free serializer for the small subset of Portable
 // Text the post/turn schemas actually allow (body is "array of block" only
