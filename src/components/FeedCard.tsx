@@ -84,6 +84,9 @@ export default function FeedCard({ post }: { post: Post }) {
             className="feed-card-via"
           >
             via Substack
+            <span className="feed-card-via-icon" aria-hidden="true">
+              ↗
+            </span>
           </a>
         )}
       </div>
@@ -139,17 +142,23 @@ export default function FeedCard({ post }: { post: Post }) {
             dangerouslySetInnerHTML={{ __html: expandedSplit.before }}
           />
           {substackUrl && (
-            <a
-              href={substackUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="subscribe-button subscribe-button-inline"
-            >
-              <span>✉</span>
-              <span>
-                Subscribe to {post.authorName} at {pronoun} Substack
-              </span>
-            </a>
+            <div className="subscribe-break">
+              <a
+                href={substackUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="subscribe-button subscribe-button-inline"
+              >
+                <img
+                  src="/brand/substack-mark.png"
+                  alt=""
+                  className="subscribe-button-mark"
+                />
+                <span>
+                  Subscribe to {post.authorName} at {pronoun} Substack
+                </span>
+              </a>
+            </div>
           )}
           {expandedSplit.after && (
             <div

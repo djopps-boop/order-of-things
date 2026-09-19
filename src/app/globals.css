@@ -290,6 +290,14 @@ a {
   color: var(--accent-2);
 }
 
+.feed-card-via-icon {
+  display: inline-block;
+  font-size: 0.8em;
+  margin-left: 3px;
+  opacity: 0.7;
+  transform: translateY(-1px);
+}
+
 .feed-card-title {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 500;
@@ -474,32 +482,70 @@ a {
   gap: 6px;
 }
 
-/* Reuses the paid-button treatment (same shape, same weight) but in the
-   site's other accent color, so the two read as siblings -- both external
-   commitments the reader is making -- without being mistaken for the same
-   action. */
+/* Reuses the paid-button treatment (same shape, same weight), but as a
+   white pill with a hairline border rather than a solid fill -- this
+   lets the actual approved Substack logo (orange, unaltered, from their
+   published brand assets) sit on the button as itself, since the logo's
+   own transparent background only reads correctly against a light
+   surface, not against a matching-color fill. */
 .subscribe-button {
   font-family: "Libre Franklin", sans-serif;
   font-weight: 700;
   font-size: 13.5px;
-  color: #fff;
-  background: var(--accent);
-  border: none;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 9px 16px;
+  padding: 8px 16px 8px 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* Sits inline between the post's 2nd and 3rd paragraphs (see
    splitHtmlAfterParagraphs in FeedCard.tsx) rather than at the bottom of
-   the action row -- these margins give it breathing room from the
-   paragraphs above and below without matching them exactly (it's a CTA,
-   not body copy). */
+   the action row. Wrapped in .subscribe-break (below) so it reads as a
+   deliberate, centered pause in the reading flow -- a small aside, not a
+   full-width banner interrupting the post -- and the pill shape (vs. the
+   rectangular .paid-button) reinforces that it's a soft aside rather than
+   the primary action on the card. */
 .subscribe-button-inline {
-  margin: 4px 0 10px;
+  border-radius: 999px;
+  padding: 8px 20px 8px 14px;
+}
+
+/* The logo file itself is Substack's approved unaltered asset (orange
+   mark, transparent background) -- placed as-is, with no recoloring, per
+   their brand guidelines. It reads correctly here because the button
+   underneath it is a light, near-white surface, not a color-matched fill. */
+.subscribe-button-mark {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* .feed-card is a flex column, so a lone child here would otherwise
+   stretch to the card's full width by default (flex's align-items:
+   stretch) -- centering the button *inside* this wrapper, rather than
+   trying to shrink the button itself, keeps the button's own sizing
+   simple while still reading as an intentional break, flanked by a
+   hairline rule on each side to match the rest of the site's dotted-rule
+   language (e.g. feed-card borders, .rich-text hr) instead of introducing
+   a new decorative motif. */
+.subscribe-break {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.subscribe-break::before,
+.subscribe-break::after {
+  content: "";
+  flex: 1;
+  border-top: 1px dotted var(--border);
 }
 
 .read-more-link {
