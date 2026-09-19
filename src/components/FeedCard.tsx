@@ -1,71 +1,48 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { Post } from "@/lib/types";
 import { EXCERPT_WORD_CAP, WORD_CAP } from "@/lib/config";
 import { htmlWordCount, truncateHtmlByWords } from "@/lib/htmlText";
 import { getSourceLabel } from "@/lib/posts";
+import { newsletterSources } from "@/lib/sources";
 
 export default function FeedCard({ post }: { post: Post }) {
   const [expanded, setExpanded] = useState(false);
   const [faved, setFaved] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const isAggregated = post.source === "aggregated";
   const isPaid = isAggregated && post.access === "paid";
-  const canExpand =
-    !isPaid && !!post.body && htmlWordCount(post.body) > EXCERPT_WORD_CAP;
-  // Re-slicing from word 0 (rather than stitching the excerpt together with
-  // a separate word-150-to-600 fragment) means a paragraph that happens to
-  // straddle word 150 stays one continuous <p> instead of getting an
-  // artificial break where the two fragments were joined.
-  const expandedText = post.body
-    ? truncateHtmlByWords(post.body, WORD_CAP)
-    : null;
+  const canExpand = !isPaid && !!post.body && htmlWordCount(post.body) > EXCERPT_WORD_CAP;
+  const substackUrl = newsletterSources.find((s) => s.authorSlug === post.authorSlug)?.url;
+  const expandedText = post.body ? truncateHtmlByWords(post.body, WORD_CAP) : null;
 
   async function handleShare() {
-    const url =
-      typeof window !== "undefined"
-        ? window.location.origin + post.permalink
-        : post.permalink;
-
+    const url = typeof window !== "undefined" ? window.location.origin + post.permalink : post.permalink;
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: post.title, url });
         return;
-      } catch {
-        // fall through to clipboard copy
-      }
+      } catch {}
     }
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard unavailable — no-op
-    }
+    } catch {}
   }
 
   return (
     <article className="feed-card">
       <div className="feed-card-tags">
         {post.tags.map((tag) => (
-          <Link key={tag} href={`/tag/${tag}`} className="feed-card-tag">
-            {tag}
-          </Link>
+          <Link key={tag} href={`/tag/${tag}`} className="feed-card-tag">{tag}</Link>
         ))}
         {isAggregated && <span className="feed-card-via">via Substack</span>}
       </div>
-
-      <h2
-        className={
-          post.featured ? "feed-card-title feed-card-title-big" : "feed-card-title"
-        }
-      >
+      <h2 className={post.featured ? "feed-card-title feed-card-title-big" : "feed-card-title"}>
         <Link href={post.permalink}>{post.title}</Link>
       </h2>
-
       <div className="feed-card-meta">
         <Link href={`/author/${post.authorSlug}`}>{post.authorName}</Link>
         <span>·</span>
@@ -73,7 +50,6 @@ export default function FeedCard({ post }: { post: Post }) {
         <span>·</span>
         <span>{post.date}</span>
       </div>
-
       {post.turns && post.turns.length > 0 && (
         <div className="feed-card-turns-indicator">
           <span>↩</span>
@@ -86,25 +62,13 @@ export default function FeedCard({ post }: { post: Post }) {
           </span>
         </div>
       )}
-
-      {post.thumbnailUrl && (
-        <img src={post.thumbnailUrl} alt="" className="feed-card-image" />
-      )}
-
+      {post.thumbnailUrl && <img src={post.thumbnailUrl} alt="" className="feed-card-image" />}
       {!expanded && (
-        <div
-          className="feed-card-excerpt rich-text"
-          dangerouslySetInnerHTML={{ __html: post.excerpt }}
-        />
+        <div className="feed-card-excerpt rich-text" dangerouslySetInnerHTML={{ __html: post.excerpt }} />
       )}
-
       {expanded && expandedText && (
-        <div
-          className="feed-card-excerpt feed-card-expanded-text rich-text"
-          dangerouslySetInnerHTML={{ __html: expandedText.html }}
-        />
+        <div className="feed-card-excerpt feed-card-expanded-text rich-text" dangerouslySetInnerHTML={{ __html: expandedText.html }} />
       )}
-
       <div className="feed-card-action-row">
         {isPaid && (
           <Link href={post.permalink} className="paid-button">
@@ -113,33 +77,23 @@ export default function FeedCard({ post }: { post: Post }) {
           </Link>
         )}
         {!isPaid && canExpand && !expanded && (
-          <button className="read-more-link" onClick={() => setExpanded(true)}>
-            Read more
-          </button>
+          <button className="read-more-link" onClick={() => setExpanded(true)}>Read more</button>
         )}
-        {!isPaid &&
-          canExpand &&
-          expanded &&
-          isAggregated &&
-          expandedText?.truncated && (
-            <Link href={post.permalink} className="read-more-link">
-              Continue reading →
-            </Link>
-          )}
+        {!isPaid && canExpand && expanded && isAggregated && expandedText?.truncated && (
+          <Link href={post.permalink} className="read-more-link">Continue reading →</Link>
+        )}
         {!isPaid && canExpand && expanded && !isAggregated && (
-          <Link href={post.permalink} className="read-more-link">
-            Continue reading →
-          </Link>
+          <Link href={post.permalink} className="read-more-link">Continue reading →</Link>
+        )}
+        {expanded && substackUrl && (
+          <a href={substackUrl} target="_blank" rel="noopener noreferrer" className="subscribe-button">
+            <span>✉</span>
+            <span>Subscribe to {post.authorName} at their Substack</span>
+          </a>
         )}
       </div>
-
       <div className="post-actions">
-        <button
-          className={
-            faved ? "post-action post-action-faved" : "post-action"
-          }
-          onClick={() => setFaved((f) => !f)}
-        >
+        <button className={faved ? "post-action post-action-faved" : "post-action"} onClick={() => setFaved((f) => !f)}>
           <span>{faved ? "★" : "☆"}</span>
           <span>Fave</span>
         </button>

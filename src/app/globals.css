@@ -453,6 +453,10 @@ a {
 
 .feed-card-action-row {
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .paid-button {
@@ -461,6 +465,26 @@ a {
   font-size: 13.5px;
   color: #fff;
   background: var(--accent-2);
+  border: none;
+  border-radius: 4px;
+  padding: 9px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Reuses the paid-button treatment (same shape, same weight) but in the
+   site's other accent color, so the two read as siblings -- both external
+   commitments the reader is making -- without being mistaken for the same
+   action. Appears once a post is expanded, next to "Continue reading"
+   rather than replacing it. */
+.subscribe-button {
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #fff;
+  background: var(--accent);
   border: none;
   border-radius: 4px;
   padding: 9px 16px;
