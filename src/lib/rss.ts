@@ -8,15 +8,21 @@ import { TAG_OVERRIDES } from "./tagOverrides";
 
 // --- the inclusion marker ------------------------------------------------
 // Contributors flag a Substack post for inclusion in the group blog by
-// putting this exact string in the post's subtitle field (Substack includes
-// the subtitle in the RSS <description>). We check title + description +
-// body, per the original build plan, then strip the marker out of whatever
-// we display. Case-insensitive, tolerant of surrounding whitespace.
-const INCLUSION_MARKER = "[[OOT]]";
-const MARKER_RE = new RegExp(
-  INCLUSION_MARKER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-  "i"
-);
+// putting one of these in the post's subtitle field (Substack includes the
+// subtitle in the RSS <description>). We check title + description + body,
+// per the original build plan, then strip whichever marker was used out of
+// whatever we display. Case-insensitive, tolerant of surrounding
+// whitespace. Two accepted forms so contributors can use whichever fits
+// their own writing style -- most people will find #oot more natural to
+// drop inline than the bracket form.
+//
+// #oot needs a word-boundary guard that [[OOT]] doesn't: the brackets
+// already make that form distinctive, but a bare "#oot" would otherwise
+// also match unrelated hashtags like #ootd ("outfit of the day") or #oots.
+// The negative lookahead blocks any letter/digit immediately following
+// "oot", so #oot itself still matches (including mid-sentence, followed by
+// a space or punctuation) but #ootd/#ootw/etc. don't.
+const MARKER_RE = /\[\[OOT\]\]|#oot(?![a-zA-Z0-9])/i;
 
 function hasMarker(...fields: (string | undefined)[]): boolean {
   return fields.some((f) => f && MARKER_RE.test(f));
@@ -27,16 +33,13 @@ function stripMarker(text: string): string {
 }
 
 // --- bootstrap mode ---------------------------------------------------------
-// Most contributors haven't started adding [[OOT]] to their subtitles yet, so
-// a strict marker-only feed would launch nearly empty. While that's true, we
-// backfill each newsletter with its most recent posts (marker or not) so the
-// site launches with real content. Once a given contributor adds the marker
-// to a post, that contributor's feed switches over to marker-only automatically
-// (see the per-source logic below) — no code change needed as adoption grows.
-//
-// To turn this off everywhere at once (once you're happy with marker-only
-// coverage sitewide), flip BOOTSTRAP_MODE to false.
-const BOOTSTRAP_MODE = true;
+// Was true while most contributors hadn't started adding a marker yet, so a
+// strict marker-only feed would have launched nearly empty -- backfilled each
+// newsletter with its most recent posts (marker or not) in the meantime.
+// Now false: every contributor is marker-only, sitewide, immediately. A
+// contributor with zero marked posts simply contributes zero posts to the
+// aggregated feed until they use one of the markers.
+const BOOTSTRAP_MODE = false;
 const BOOTSTRAP_POSTS_PER_SOURCE = 2;
 
 // --- paywall detection ----------------------------------------------------

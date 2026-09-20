@@ -34,7 +34,7 @@ const FALLBACK_NATIVE_POST: Post = {
 
 // A static export ("output: export") requires every dynamic route to
 // prerender at least one path — /read/[slug] would have zero if literally
-// no contributor has used the [[OOT]] marker yet (a very real state right
+// no contributor has used the [[OOT]] or #oot marker yet (a very real state right
 // after launch), which fails the build outright. This single seed post
 // keeps that route buildable until real aggregated posts start flowing in;
 // it disappears automatically the moment fetchAllAggregatedPosts() returns
@@ -46,7 +46,7 @@ const FALLBACK_AGGREGATED_POST: Post = {
   authorSlug: "author-name",
   date: "2026-01-01",
   excerpt: toParagraphHtml(
-    "Once a contributor adds the [[OOT]] marker to a Substack post's subtitle, it'll show up in this feed automatically — this placeholder just keeps the site buildable until then."
+    "Once a contributor adds [[OOT]] or #oot to a Substack post's subtitle, it'll show up in this feed automatically — this placeholder just keeps the site buildable until then."
   ),
   tags: [],
   source: "aggregated",
@@ -59,7 +59,7 @@ const FALLBACK_AGGREGATED_POST: Post = {
 // Aggregated posts now come from a real RSS fetch + marker-filter pass over
 // each confirmed newsletter (src/lib/rss.ts), run once per build and reused
 // by every page that needs the combined feed. If a newsletter is
-// unreachable or nobody has used the [[OOT]] marker yet, it just
+// unreachable or nobody has used either marker yet, it just
 // contributes zero posts — see rss.ts for the per-source error handling.
 let cachedAllPosts: Promise<Post[]> | null = null;
 
