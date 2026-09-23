@@ -5,7 +5,7 @@
 // (NEXT_PUBLIC_SANITY_PROJECT_ID, NEXT_PUBLIC_SANITY_DATASET) and the
 // Studio at /studio will actually connect.
 export const projectId =
-  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "[SANITY_PROJECT_ID]";
+  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "placeholder-project";
 export const dataset =
   process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 export const apiVersion =
