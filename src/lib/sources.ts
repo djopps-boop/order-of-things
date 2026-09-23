@@ -41,13 +41,6 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://markoppenheimer.substack.com",
   },
   {
-    authorName: "Naomi Kanakia",
-    authorSlug: "naomi-kanakia",
-    newsletterName: "Woman of Letters",
-    url: "https://www.woman-of-letters.com",
-    pronoun: "her",
-  },
-  {
     authorName: "Mary Jane Eyre",
     authorSlug: "mary-jane-eyre",
     newsletterName: "The extremely difficult realisation",
