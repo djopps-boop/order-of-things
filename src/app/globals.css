@@ -120,8 +120,16 @@ a {
   display: block;
 }
 
-html[data-theme="dark"] .wordmark-image {
-  filter: invert(1);
+.wordmark-image--dark {
+  display: none;
+}
+
+html[data-theme="dark"] .wordmark-image--light {
+  display: none;
+}
+
+html[data-theme="dark"] .wordmark-image--dark {
+  display: block;
 }
 
 .site-nav {
