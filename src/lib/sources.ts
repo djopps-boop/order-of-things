@@ -8,6 +8,10 @@
 // like everyone else's, rather than treated as a special "native" identity —
 // the group blog itself is named The Order of Things, distinct from any
 // single contributor's newsletter name.
+//
+// Ordered alphabetically by (last word of) authorName -- this is also the
+// order the Contributors sidebar renders in, since Sidebar.tsx maps over
+// this array directly without re-sorting.
 
 export interface NewsletterSource {
   authorName: string;
@@ -23,22 +27,24 @@ export interface NewsletterSource {
 
 export const newsletterSources: NewsletterSource[] = [
   {
-    authorName: "Daniel Oppenheimer",
-    authorSlug: "daniel-oppenheimer",
-    newsletterName: "Eminent Americans",
-    url: "https://danieloppenheimer.substack.com",
+    authorName: "Gnocchic Apocryphon",
+    authorSlug: "gnocchic-apocryphon",
+    newsletterName: "Gnocchic Codices",
+    url: "https://gnocchiccodices.substack.com",
+    note: "Pen name — used as-is for the byline.",
   },
   {
-    authorName: "Blake Smith",
-    authorSlug: "blake-smith",
-    newsletterName: "Blake Smith",
-    url: "https://blakeesmith.substack.com",
+    authorName: "Henry Begler",
+    authorSlug: "henry-begler",
+    newsletterName: "A Good Hard Stare",
+    url: "https://agoodhardstare.substack.com",
   },
   {
-    authorName: "Mark Oppenheimer",
-    authorSlug: "mark-oppenheimer",
-    newsletterName: "Oppenheimer",
-    url: "https://markoppenheimer.substack.com",
+    authorName: "John Encaustum",
+    authorSlug: "john-encaustum",
+    newsletterName: "The Blackthorn Hedge",
+    url: "https://blackthornhedge.substack.com",
+    note: "Pen name — used as-is for the byline.",
   },
   {
     authorName: "Mary Jane Eyre",
@@ -49,42 +55,16 @@ export const newsletterSources: NewsletterSource[] = [
     pronoun: "her",
   },
   {
-    authorName: "Henry Begler",
-    authorSlug: "henry-begler",
-    newsletterName: "A Good Hard Stare",
-    url: "https://agoodhardstare.substack.com",
+    authorName: "Paul Franz",
+    authorSlug: "paul-franz",
+    newsletterName: "ashes and sparks",
+    url: "https://ashesandsparks.substack.com",
   },
   {
-    authorName: "John Pistelli",
-    authorSlug: "john-pistelli",
-    newsletterName: "Grand Hotel Abyss",
-    url: "https://grandhotelabyss.substack.com",
-  },
-  {
-    authorName: "Julianne Werlin",
-    authorSlug: "julianne-werlin",
-    newsletterName: "Life and Letters",
-    url: "https://lifeandletters.substack.com",
-    pronoun: "her",
-  },
-  {
-    authorName: "David Sessions",
-    authorSlug: "david-sessions",
-    newsletterName: "Listening Sessions",
-    url: "https://www.hdavidsessions.com",
-  },
-  {
-    authorName: "Emmett Rensin",
-    authorSlug: "emmett-rensin",
-    newsletterName: "The Lunatic Fringe",
-    url: "https://lunaticfringe.substack.com",
-  },
-  {
-    authorName: "John Encaustum",
-    authorSlug: "john-encaustum",
-    newsletterName: "The Blackthorn Hedge",
-    url: "https://blackthornhedge.substack.com",
-    note: "Pen name — used as-is for the byline.",
+    authorName: "Sam Kahn",
+    authorSlug: "sam-kahn",
+    newsletterName: "Castalia",
+    url: "https://samkahn.substack.com",
   },
   {
     authorName: "Shreeharsh Kelkar",
@@ -93,23 +73,34 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://computingandsociety.substack.com",
   },
   {
-    authorName: "Gnocchic Apocryphon",
-    authorSlug: "gnocchic-apocryphon",
-    newsletterName: "Gnocchic Codices",
-    url: "https://gnocchiccodices.substack.com",
-    note: "Pen name — used as-is for the byline.",
-  },
-  {
     authorName: "Jeffrey Lawrence",
     authorSlug: "jeffrey-lawrence",
     newsletterName: "Avenues of the Americas",
     url: "https://avenuesofamericas.substack.com",
   },
   {
-    authorName: "Paul Franz",
-    authorSlug: "paul-franz",
-    newsletterName: "ashes and sparks",
-    url: "https://ashesandsparks.substack.com",
+    authorName: "Daniel Oppenheimer",
+    authorSlug: "daniel-oppenheimer",
+    newsletterName: "Eminent Americans",
+    url: "https://danieloppenheimer.substack.com",
+  },
+  {
+    authorName: "Mark Oppenheimer",
+    authorSlug: "mark-oppenheimer",
+    newsletterName: "Oppenheimer",
+    url: "https://markoppenheimer.substack.com",
+  },
+  {
+    authorName: "John Pistelli",
+    authorSlug: "john-pistelli",
+    newsletterName: "Grand Hotel Abyss",
+    url: "https://grandhotelabyss.substack.com",
+  },
+  {
+    authorName: "Emmett Rensin",
+    authorSlug: "emmett-rensin",
+    newsletterName: "The Lunatic Fringe",
+    url: "https://lunaticfringe.substack.com",
   },
   {
     authorName: "George Scialabba",
@@ -118,9 +109,22 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://georgescialabba594281.substack.com",
   },
   {
-    authorName: "Sam Kahn",
-    authorSlug: "sam-kahn",
-    newsletterName: "Castalia",
-    url: "https://samkahn.substack.com",
+    authorName: "David Sessions",
+    authorSlug: "david-sessions",
+    newsletterName: "Listening Sessions",
+    url: "https://www.hdavidsessions.com",
+  },
+  {
+    authorName: "Blake Smith",
+    authorSlug: "blake-smith",
+    newsletterName: "Blake Smith",
+    url: "https://blakeesmith.substack.com",
+  },
+  {
+    authorName: "Julianne Werlin",
+    authorSlug: "julianne-werlin",
+    newsletterName: "Life and Letters",
+    url: "https://lifeandletters.substack.com",
+    pronoun: "her",
   },
 ];

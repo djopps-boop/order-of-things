@@ -115,7 +115,7 @@ a {
 }
 
 .wordmark-image {
-  height: 42px;
+  height: 84px;
   width: auto;
   display: block;
 }
@@ -529,6 +529,7 @@ html[data-theme="dark"] .wordmark-image--dark {
   align-items: center;
   gap: 16px;
   margin: 22px 0;
+  max-width: 68ch;
 }
 
 .subscribe-break::before,
@@ -1116,7 +1117,7 @@ html[data-theme="dark"] .wordmark-image--dark {
   }
 
   .wordmark-image {
-    height: 32px;
+    height: 64px;
   }
 
   .site-nav {
