@@ -167,6 +167,28 @@ function shouldExcludeFrame(frame: {
   const cls = typeof attribs?.class === "string" ? attribs.class : "";
   if (tag === "p" && /\bbutton-wrapper\b/.test(cls)) return true;
 
+  // Substack's "subscribe widget" promo block, which most contributors
+  // leave at its default copy, e.g.
+  //   <div class="subscribe-widget">
+  //     <p>Eminent Americans is a reader-supported publication. To receive
+  //     new posts and support my work, consider becoming a free or paid
+  //     subscriber.</p>
+  //     <p class="button-wrapper">...</p>
+  //   </div>
+  // The button itself is already caught above; this catches the wrapper
+  // (by class, when present) and the caption text itself (by the fixed
+  // part of Substack's default copy around the interpolated publication
+  // name), since the wrapper isn't in ALLOWED_TAGS and would otherwise
+  // just be unwrapped -- leaving that sentence looking like ordinary prose
+  // (reported: exactly this text showing up inside a post body).
+  if (/\bsubscribe-widget\b/.test(cls)) return true;
+  if (
+    (tag === "p" || tag === "div") &&
+    /reader-supported publication\b[\s\S]{0,200}?\bsubscriber\b/i.test(text || "")
+  ) {
+    return true;
+  }
+
   // Some authors manually truncate their own post with a "Read more" (or
   // "Read More →") link partway through, pointing back at the same
   // Substack post -- distinct from the button-wrapper CTA above (this is
