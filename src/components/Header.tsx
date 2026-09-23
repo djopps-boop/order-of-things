@@ -22,9 +22,8 @@ export default function Header() {
     <header className="site-header">
       <div className="header-left">
         <Link href="/" className="wordmark">
-          <span className="wordmark-block">The</span>
-          <span className="wordmark-accent">Order</span>
-          <span className="wordmark-block">of Things</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/wordmark.webp" alt="The Order of Things" className="wordmark-image" />
         </Link>
         <span className="header-divider" aria-hidden="true" />
       </div>
