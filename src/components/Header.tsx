@@ -23,7 +23,17 @@ export default function Header() {
       <div className="header-left">
         <Link href="/" className="wordmark">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/wordmark.webp" alt="The Order of Things" className="wordmark-image" />
+          <img
+            src="/brand/wordmark-light.webp"
+            alt="The Order of Things"
+            className="wordmark-image wordmark-image--light"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/wordmark-dark.webp"
+            alt="The Order of Things"
+            className="wordmark-image wordmark-image--dark"
+          />
         </Link>
         <span className="header-divider" aria-hidden="true" />
       </div>

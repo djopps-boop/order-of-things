@@ -117,4 +117,10 @@ export const newsletterSources: NewsletterSource[] = [
     newsletterName: "Lingua Franca",
     url: "https://georgescialabba594281.substack.com",
   },
+  {
+    authorName: "Sam Kahn",
+    authorSlug: "sam-kahn",
+    newsletterName: "Castalia",
+    url: "https://samkahn.substack.com",
+  },
 ];
