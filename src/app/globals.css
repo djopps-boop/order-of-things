@@ -110,24 +110,18 @@ a {
 }
 
 .wordmark {
-  font-family: "Source Serif 4", serif;
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--ink);
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
 }
 
-.wordmark-accent {
-  font-style: italic;
-  font-weight: 600;
-  font-size: 38px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--accent);
+.wordmark-image {
+  height: 42px;
+  width: auto;
+  display: block;
+}
+
+html[data-theme="dark"] .wordmark-image {
+  filter: invert(1);
 }
 
 .site-nav {
@@ -1113,13 +1107,8 @@ a {
     display: none;
   }
 
-  .wordmark {
-    font-size: 12px;
-    letter-spacing: 1.8px;
-  }
-
-  .wordmark-accent {
-    font-size: 28px;
+  .wordmark-image {
+    height: 32px;
   }
 
   .site-nav {
