@@ -5,16 +5,6 @@ import { newsletterSources } from "@/lib/sources";
 import ActivitySparkline from "./ActivitySparkline";
 import OrnamentalDivider from "./OrnamentalDivider";
 
-// Blogroll is manually curated — not derived from the aggregation list.
-// Colors are a small fixed palette, cycled, matching the design's
-// favicon-style colored-initial chip treatment.
-const BLOGROLL_COLORS = ["#B33F1E", "#1F5F5B", "#8A5A2B", "#6B4E9B", "#3D6EA5"];
-const blogroll = [
-  { name: "Site name", url: "https://example.com" },
-  { name: "Site name", url: "https://example.com" },
-  { name: "Site name", url: "https://example.com" },
-].map((site, i) => ({ ...site, color: BLOGROLL_COLORS[i % BLOGROLL_COLORS.length] }));
-
 const contributors = newsletterSources.map((s) => ({
   name: s.authorName,
   slug: s.authorSlug,
@@ -29,7 +19,6 @@ const contributors = newsletterSources.map((s) => ({
 const MIN_TAG_SIZE = 12;
 const MAX_TAG_SIZE = 24;
 
-// Small inline line-icons, matching the design handoff's hand-drawn SVG set.
 function DocumentIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="section-icon">
@@ -61,14 +50,6 @@ function SpeechBubbleIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="section-icon">
       <path d="M4 5h16v11H9l-4 4V5z" />
-    </svg>
-  );
-}
-
-function ChainLinkIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="section-icon">
-      <path d="M9 15l6-6M8 12l-2.5 2.5a3 3 0 104 4L12 16M16 12l2.5-2.5a3 3 0 10-4-4L12 8" />
     </svg>
   );
 }
@@ -162,31 +143,6 @@ export default async function Sidebar() {
       </section>
 
       <ActivitySparkline />
-
-      <section className="sidebar-section">
-        <h3 className="sidebar-head">
-          <ChainLinkIcon />
-          Blogroll
-        </h3>
-        <div className="blogroll-list">
-          {blogroll.map((site, i) => (
-            <a
-              key={i}
-              href={site.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="blogroll-link"
-            >
-              <span className="blogroll-initial" style={{ background: site.color }}>
-                {site.name[0]}
-              </span>
-              <span>{site.name}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <OrnamentalDivider />
 
       <section className="sidebar-section">
         <h3 className="sidebar-head">

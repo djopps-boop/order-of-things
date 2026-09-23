@@ -718,15 +718,13 @@ a {
   opacity: 0.55;
 }
 
-.contributor-list,
-.blogroll-list {
+.contributor-list {
   display: flex;
   flex-direction: column;
   gap: 9px;
 }
 
-.contributor-link,
-.blogroll-link {
+.contributor-link {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -742,19 +740,6 @@ a {
   background: var(--chip-bg-2);
   color: var(--accent-2);
   font-size: 10px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.blogroll-initial {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  color: #fff;
-  font-size: 10.5px;
   font-weight: 800;
   display: flex;
   align-items: center;
