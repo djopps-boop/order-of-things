@@ -15,6 +15,7 @@
   --accent-2: #B8722E;
   --chip-bg: #E4EFEE;
   --chip-bg-2: #F3E7D8;
+  --tag-accent: #1B4332;
 }
 
 html[data-theme="dark"] {
@@ -29,6 +30,7 @@ html[data-theme="dark"] {
   --accent-2: #E0995A;
   --chip-bg: #1C2A29;
   --chip-bg-2: #2E2620;
+  --tag-accent: #63C79A;
 }
 
 html {
@@ -149,21 +151,22 @@ html[data-theme="dark"] .wordmark-image--dark {
 .tag-shortcuts {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .tag-shortcut {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
   font-weight: 600;
   font-size: 13px;
-  color: var(--ink);
-  background: var(--chip-bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tag-accent);
+}
+
+.tag-shortcut-sep {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color: var(--tag-accent);
+  opacity: 0.5;
 }
 
 .theme-toggle {
@@ -700,7 +703,7 @@ html[data-theme="dark"] .wordmark-image--dark {
   font-size: 12px;
 }
 
-.sidebar-sprig-divider {
+.sidebar-mark-divider {
   width: 100%;
   height: 40px;
   display: flex;
@@ -708,17 +711,9 @@ html[data-theme="dark"] .wordmark-image--dark {
   justify-content: center;
 }
 
-.sidebar-sprig-rule {
-  stroke: var(--border);
-}
-
-.sidebar-sprig-stem {
-  stroke: var(--accent);
-  fill: none;
-}
-
-.sidebar-sprig-bud {
-  fill: var(--accent-2);
+.sidebar-mark-rule,
+.sidebar-mark-square {
+  stroke: var(--tag-accent);
 }
 
 .sidebar-sparkline {
