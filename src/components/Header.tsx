@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
@@ -11,10 +12,10 @@ import ThemeToggle from "./ThemeToggle";
 // technology, politics, and the more art/lifestyle-adjacent pieces
 // ("Culture") each well-represented too.
 const tagShortcuts = [
-  { emoji: "💡", name: "Ideas", slug: "ideas" },
-  { emoji: "🏛️", name: "Politics", slug: "politics" },
-  { emoji: "🤖", name: "Technology", slug: "technology" },
-  { emoji: "🎭", name: "Culture", slug: "culture" },
+  { name: "Ideas", slug: "ideas" },
+  { name: "Politics", slug: "politics" },
+  { name: "Technology", slug: "technology" },
+  { name: "Culture", slug: "culture" },
 ];
 
 export default function Header() {
@@ -50,16 +51,17 @@ export default function Header() {
           About
         </Link>
         <div className="tag-shortcuts">
-          {tagShortcuts.map((t) => (
-            <Link
-              key={t.slug}
-              href={`/tag/${t.slug}`}
-              title={t.name}
-              className="tag-shortcut"
-            >
-              <span>{t.emoji}</span>
-              <span>{t.name}</span>
-            </Link>
+          {tagShortcuts.map((t, i) => (
+            <Fragment key={t.slug}>
+              {i > 0 && (
+                <span className="tag-shortcut-sep" aria-hidden="true">
+                  ·
+                </span>
+              )}
+              <Link href={`/tag/${t.slug}`} title={t.name} className="tag-shortcut">
+                [ {t.name.toUpperCase()} ]
+              </Link>
+            </Fragment>
           ))}
         </div>
         <span className="header-divider" aria-hidden="true" />

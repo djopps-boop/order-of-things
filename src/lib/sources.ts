@@ -134,4 +134,10 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://lifeandletters.substack.com",
     pronoun: "her",
   },
+  {
+    authorName: "Daniel Wortel-London",
+    authorSlug: "daniel-wortel-london",
+    newsletterName: "The Economy of Community",
+    url: "https://dlondon7.substack.com",
+  },
 ];
