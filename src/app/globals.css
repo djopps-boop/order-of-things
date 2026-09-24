@@ -160,12 +160,12 @@ html[data-theme="dark"] .wordmark-image--dark {
   font-size: 13px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--tag-accent);
+  color: var(--accent-2);
 }
 
 .tag-shortcut-sep {
   font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
-  color: var(--tag-accent);
+  color: var(--accent-2);
   opacity: 0.5;
 }
 
