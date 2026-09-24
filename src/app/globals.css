@@ -788,6 +788,17 @@ html[data-theme="dark"] .wordmark-image--dark {
   color: var(--ink-soft);
 }
 
+.recent-comment-permalink {
+  color: var(--muted);
+  text-decoration: none;
+  opacity: 0.7;
+}
+
+.recent-comment-permalink:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
 .tag-cloud {
   display: flex;
   flex-wrap: wrap;
@@ -919,13 +930,40 @@ html[data-theme="dark"] .wordmark-image--dark {
 .turns-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Shared "ribbon" badge (design direction A) -- used identically in three
+   places so a reader learns to recognize it once: the feed card indicator,
+   the jump-link near a post's headline (an <a>, everywhere else a <span>),
+   and this turns-section header itself. Echoes the Subscribe button's
+   gradient deliberately -- see globals.css's earlier note on that button;
+   the goal is the same "this is worth noticing" signal. */
+.turns-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: "Libre Franklin", sans-serif;
   font-weight: 800;
-  font-size: 13px;
-  letter-spacing: 1.2px;
+  font-size: 12px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--accent);
+  color: #7A3B12;
+  background: linear-gradient(135deg, #FFA65C 0%, #FFD37A 100%);
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  width: fit-content;
+}
+
+a.turns-ribbon:hover {
+  filter: brightness(0.96);
+}
+
+/* Wraps the near-headline jump-link version specifically (page.tsx), which
+   sits between the byline/tags block and the post body. */
+.post-turns-jump {
+  margin: 4px 0 20px;
 }
 
 .turn {
@@ -956,14 +994,68 @@ html[data-theme="dark"] .wordmark-image--dark {
   color: var(--ink-soft);
 }
 
+/* Deliberately just plain muted text at the same weight as the "· date"
+   separator beside it -- a factual descriptor, not a badge or rank. See
+   the on-the-horizon notes on why guest Turns stay this understated. */
+.turn-guest-tag {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Nested inside the Turn it replies to (not a new peer card) -- a dashed
+   divider is enough to set it apart without competing visually with the
+   Turn above it. */
+.author-reply {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.author-reply-label {
+  margin-bottom: 8px;
+}
+
+.author-reply-body {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* Dashed border deliberately, unlike Subscribe's solid gradient fill --
+   this is a backstage/contributor-only control, invisible to ordinary
+   readers, and shouldn't visually compete with reader-facing CTAs. */
+.take-a-turn-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  padding: 10px 18px;
+  border: 1.5px dashed var(--accent-2);
+  border-radius: 6px;
+  font-family: "Libre Franklin", sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--accent-2);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.take-a-turn-button:hover {
+  background: var(--surface-warm);
+}
+
 .feed-card-turns-indicator {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.feed-card-turns-meta {
   font-family: "Libre Franklin", sans-serif;
-  font-size: 12.5px;
-  color: var(--accent);
-  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .read-thumbnail {

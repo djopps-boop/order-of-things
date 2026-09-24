@@ -15,9 +15,22 @@ export type AccessLevel = "free" | "paid";
 export interface Turn {
   id: string;
   authorName: string;
-  authorSlug: string;
+  authorSlug: string; // meaningful only when !isGuest -- see below
   body: string; // HTML, converted from Portable Text
   date: string; // ISO datetime string
+  // Present only when the ORIGINAL POST's author has replied to this
+  // specific Turn -- see turn.ts's authorReply field and AuthorReplyInput,
+  // which restricts who can write it. HTML, converted from Portable Text,
+  // same as body.
+  authorReply?: string;
+  // A reader comment an editor promoted into Turn-space rather than
+  // something a contributor wrote (see turn.ts's isGuest/guestName/
+  // guestCommentUrl fields). Deliberately styled almost identically to a
+  // contributor Turn -- the byline just links to guestCommentUrl (the
+  // original comment) instead of an author page, since guests don't have
+  // one. No badge, no rank -- see the on-the-horizon notes on why.
+  isGuest?: boolean;
+  guestCommentUrl?: string;
 }
 
 export interface Post {
@@ -62,4 +75,9 @@ export interface Post {
   // alone. Falls back to `date` when absent (aggregated/fallback posts, or
   // native posts with no turns).
   lastActivity?: string;
+  // The underlying Sanity document _id -- native posts only. Powers the
+  // public-facing "Take a Turn" button's deep link into Studio
+  // (/studio/intent/edit/id=...;type=post); absent for aggregated posts,
+  // which aren't Sanity documents at all and so can't take turns.
+  sanityId?: string;
 }

@@ -1,8 +1,9 @@
-import { Post } from "./types";
+import { Post, Turn } from "./types";
 import { newsletterSources } from "./sources";
 import { fetchAllAggregatedPosts } from "./rss";
 import { toParagraphHtml } from "./htmlText";
-import { getNativePostsFromSanity } from "@/sanity/posts";
+import { getPostsFromSanity } from "@/sanity/posts";
+import { syncOrAdoptAggregatedPost } from "@/sanity/adoptedPosts";
 
 // Native posts now come from Sanity Studio (/studio) via
 // getNativePostsFromSanity() -- see src/sanity/posts.ts. This single post is
@@ -60,31 +61,148 @@ const FALLBACK_AGGREGATED_POST: Post = {
 // each confirmed newsletter (src/lib/rss.ts), run once per build and reused
 // by every page that needs the combined feed. If a newsletter is
 // unreachable or nobody has used either marker yet, it just
-// contributes zero posts — see rss.ts for the per-source error handling.
+// contributes zero posts -- see rss.ts for the per-source error handling.
+//
+// Since lazy adoption (see adoptedPosts.ts), some aggregated posts also
+// have a permanent Sanity identity -- getPostsFromSanity() returns those
+// alongside native posts, distinguished by Post.source. This function is
+// where the two get reconciled every build: an already-adopted post whose
+// source is still live gets resynced (regardless of whether any turn
+// activity touches it this build); a [[TURN:slug]] pointing at a
+// not-yet-adopted post gets it adopted right now if that post is still
+// live in this build's RSS fetch; and every resolved attachment becomes a
+// real (if still build-computed, not Sanity-stored) Turn merged onto its
+// target. An attachment that resolves to nothing -- the target doesn't
+// exist as a native post, an adopted post, or a live RSS item -- gets
+// dropped with a console warning rather than failing the build.
 let cachedAllPosts: Promise<Post[]> | null = null;
 
 function loadAllPosts(): Promise<Post[]> {
   if (!cachedAllPosts) {
-    cachedAllPosts = Promise.all([
-      getNativePostsFromSanity(),
-      fetchAllAggregatedPosts(newsletterSources),
-    ]).then(([nativeFromSanity, aggregated]) => {
-      const resolvedNative =
-        nativeFromSanity.length > 0 ? nativeFromSanity : [FALLBACK_NATIVE_POST];
+    cachedAllPosts = (async () => {
+      const [sanityPosts, aggregatedFetch] = await Promise.all([
+        getPostsFromSanity(),
+        fetchAllAggregatedPosts(newsletterSources),
+      ]);
+
+      const nativePosts = sanityPosts.filter((p) => p.source === "native");
+      const adoptedPosts = sanityPosts.filter((p) => p.source === "aggregated");
+
+      // Every RSS item still being scanned this build -- OOT-tagged,
+      // turn-tagged, or both -- keyed by its stable Substack URL and by
+      // slug. An item present under both markers is the same computed
+      // Post either way, so whichever sets the map entry last is fine.
+      const liveBySourceUrl = new Map<string, Post>();
+      for (const p of aggregatedFetch.posts) {
+        if (p.sourceUrl) liveBySourceUrl.set(p.sourceUrl, p);
+      }
+      for (const a of aggregatedFetch.turnAttachments) {
+        if (a.sourcePost.sourceUrl) liveBySourceUrl.set(a.sourcePost.sourceUrl, a.sourcePost);
+      }
+      const liveBySlug = new Map<string, Post>();
+      for (const p of liveBySourceUrl.values()) liveBySlug.set(p.slug, p);
+
+      // Resync every already-adopted post that's still live -- every
+      // build, independent of any turn activity, so an edit on Substack
+      // shows up here without needing a fresh turn to trigger it. Falls
+      // back to the frozen persisted copy if the write client isn't
+      // configured yet, the sync fails, or the source is no longer live.
+      const resolvedAdopted: Post[] = [];
+      for (const adopted of adoptedPosts) {
+        const fresh = adopted.sourceUrl ? liveBySourceUrl.get(adopted.sourceUrl) : undefined;
+        const synced = fresh ? await syncOrAdoptAggregatedPost(fresh) : null;
+        resolvedAdopted.push(
+          synced
+            ? { ...synced, turns: adopted.turns, lastActivity: adopted.lastActivity }
+            : adopted
+        );
+      }
+
+      // Resolve every [[TURN:slug]] attachment against: a native post, an
+      // already-(re)synced adopted post, or -- first-time adoption -- a
+      // post that's still live in this build's RSS fetch but has no
+      // Sanity identity yet.
+      const nativeBySlug = new Map(nativePosts.map((p) => [p.slug, p]));
+      const adoptedBySlug = new Map(resolvedAdopted.map((p) => [p.slug, p]));
+      const newlyAdopted: Post[] = [];
+      const virtualTurnsBySanityId = new Map<string, Turn[]>();
+
+      for (const attachment of aggregatedFetch.turnAttachments) {
+        let target =
+          nativeBySlug.get(attachment.targetSlug) ?? adoptedBySlug.get(attachment.targetSlug);
+
+        if (!target) {
+          const candidate = liveBySlug.get(attachment.targetSlug);
+          if (candidate) {
+            const created = await syncOrAdoptAggregatedPost(candidate);
+            if (created) {
+              target = created;
+              newlyAdopted.push(created);
+              adoptedBySlug.set(created.slug, created);
+            }
+          }
+        }
+
+        if (!target?.sanityId) {
+          console.warn(
+            `[rss-turns] could not attach "${attachment.sourcePost.title}" as a turn -- no resolvable post for slug "${attachment.targetSlug}"`
+          );
+          continue;
+        }
+
+        const list = virtualTurnsBySanityId.get(target.sanityId) ?? [];
+        list.push({
+          id: `rss-${attachment.sourcePost.slug}`,
+          authorName: attachment.sourcePost.authorName,
+          authorSlug: attachment.sourcePost.authorSlug,
+          body: attachment.sourcePost.body || attachment.sourcePost.excerpt,
+          date: attachment.sourcePost.date,
+        });
+        virtualTurnsBySanityId.set(target.sanityId, list);
+      }
+
+      function withVirtualTurns(post: Post): Post {
+        const extra = post.sanityId ? virtualTurnsBySanityId.get(post.sanityId) : undefined;
+        if (!extra?.length) return post;
+        const merged = [...(post.turns ?? []), ...extra].sort((a, b) =>
+          a.date < b.date ? -1 : 1
+        );
+        return {
+          ...post,
+          turns: merged,
+          lastActivity: merged[merged.length - 1]?.date ?? post.lastActivity,
+        };
+      }
+
+      const finalNative = nativePosts.map(withVirtualTurns);
+      const finalAdopted = [...resolvedAdopted, ...newlyAdopted].map(withVirtualTurns);
+
+      // A regular feed candidate that's now backed by an adopted Sanity
+      // doc is represented by that doc instead -- otherwise it'd show up
+      // twice (once ephemeral, once persisted) for the same content.
+      const adoptedSourceUrls = new Set(
+        finalAdopted.map((p) => p.sourceUrl).filter((u): u is string => !!u)
+      );
+      const remainingEphemeral = aggregatedFetch.posts.filter(
+        (p) => !p.sourceUrl || !adoptedSourceUrls.has(p.sourceUrl)
+      );
+
+      const resolvedNative = finalNative.length > 0 ? finalNative : [FALLBACK_NATIVE_POST];
+      const combinedAggregated = [...finalAdopted, ...remainingEphemeral];
       const resolvedAggregated =
-        aggregated.length > 0 ? aggregated : [FALLBACK_AGGREGATED_POST];
-      const all = [...resolvedNative, ...resolvedAggregated];
+        combinedAggregated.length > 0 ? combinedAggregated : [FALLBACK_AGGREGATED_POST];
+
       // Sort by lastActivity (a post's own date, bumped forward by its
       // most recent turn -- see Post.lastActivity) rather than plain
       // publish date, so a post that gets a new turn rises back toward
-      // the top of the feed. Aggregated/fallback posts have no
-      // lastActivity and just sort by their own date, same as before.
-      return all.sort(
+      // the top of the feed. Aggregated/fallback posts with no turns just
+      // sort by their own date, same as before.
+      return [...resolvedNative, ...resolvedAggregated].sort(
         (a, b) =>
           new Date(b.lastActivity ?? b.date).getTime() -
           new Date(a.lastActivity ?? a.date).getTime()
       );
-    });
+    })();
   }
   return cachedAllPosts;
 }

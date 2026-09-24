@@ -24,6 +24,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 interface DiscussionCommentNode {
   bodyText: string;
   updatedAt: string;
+  url: string; // the comment's own permalink on github.com — publicly viewable without a GitHub account
   author: { login: string } | null;
 }
 
@@ -59,6 +60,7 @@ const DISCUSSIONS_QUERY = `
             nodes {
               bodyText
               updatedAt
+              url
               author { login }
             }
           }
@@ -165,6 +167,7 @@ export interface RecentComment {
   postTitle: string;
   postHref: string;
   snippet: string;
+  commentUrl: string; // shareable link to the comment itself on github.com
 }
 
 const SNIPPET_MAX_LENGTH = 140;
@@ -192,6 +195,7 @@ export async function getRecentComments(limit = 5): Promise<RecentComment[]> {
         postTitle: post.title,
         postHref: post.permalink,
         snippet: toSnippet(comment.bodyText),
+        commentUrl: comment.url,
         updatedAt: comment.updatedAt,
       });
     }
@@ -203,6 +207,7 @@ export async function getRecentComments(limit = 5): Promise<RecentComment[]> {
     postTitle: c.postTitle,
     postHref: c.postHref,
     snippet: c.snippet,
+    commentUrl: c.commentUrl,
   }));
 }
 

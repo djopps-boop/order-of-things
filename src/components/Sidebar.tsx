@@ -136,7 +136,17 @@ export default async function Sidebar() {
               <Link href={c.postHref} className="recent-comment-post">
                 {c.postTitle}
               </Link>
-              : &ldquo;{c.snippet}&rdquo;
+              : &ldquo;{c.snippet}&rdquo;{" "}
+              <a
+                href={c.commentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="recent-comment-permalink"
+                aria-label="Link to this comment"
+                title="Link to this comment"
+              >
+                ↗
+              </a>
             </p>
           ))}
         </div>

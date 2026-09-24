@@ -32,6 +32,35 @@ function stripMarker(text: string): string {
   return text.replace(new RegExp(MARKER_RE.source, "gi"), "").trim();
 }
 
+// --- the turn-attachment marker -------------------------------------------
+// A second, independent, parameterized marker: [[TURN:slug]] in the same
+// fields checked above marks a post as a reply to a specific post on the
+// site (native, or another aggregated post -- see adoptedPosts.ts for how
+// the latter gets a permanent identity the first time this happens), where
+// `slug` is that post's URL slug, copied straight from its /post/ or
+// /read/ URL. Independent of MARKER_RE on purpose: a contributor can use
+// [[OOT]] alone (normal feed post, unchanged), [[TURN:slug]] alone (turn
+// only, doesn't clutter the feed with a duplicate entry), or both together
+// (does both jobs at once). See posts.ts's loadAllPosts() for how a
+// resolved attachment becomes a real Turn, and how an unresolved one
+// (target doesn't exist anywhere, in Sanity or in this build's own RSS
+// fetch) gets dropped with a build-log warning rather than failing the
+// build.
+const TURN_TARGET_RE = /\[\[TURN:([a-zA-Z0-9-]+)\]\]/i;
+
+function extractTurnTarget(...fields: (string | undefined)[]): string | undefined {
+  for (const field of fields) {
+    if (!field) continue;
+    const match = field.match(TURN_TARGET_RE);
+    if (match) return match[1].toLowerCase();
+  }
+  return undefined;
+}
+
+function stripTurnMarker(text: string): string {
+  return text.replace(new RegExp(TURN_TARGET_RE.source, "gi"), "").trim();
+}
+
 // --- bootstrap mode ---------------------------------------------------------
 // Was true while most contributors hadn't started adding a marker yet, so a
 // strict marker-only feed would have launched nearly empty -- backfilled each
@@ -359,13 +388,28 @@ async function fetchFeedXml(feedUrl: string): Promise<string> {
   }
 }
 
+// A [[TURN:slug]] item, whether or not it also carries [[OOT]]. sourcePost
+// is the full Post-shaped content either way -- authorName/authorSlug/
+// body/date are what a virtual Turn needs; the rest (title/excerpt/tags/
+// sourceUrl/access) only matters if the target turns out to need adopting
+// for the first time (see adoptedPosts.ts).
+export interface TurnAttachment {
+  targetSlug: string;
+  sourcePost: Post;
+}
+
+export interface AggregatedFetchResult {
+  posts: Post[];
+  turnAttachments: TurnAttachment[];
+}
+
 // Fetches, filters (marker), and normalizes a single newsletter's feed into
 // our shared Post shape. Never throws — a source that's down or unreachable
 // just contributes zero posts, logged as a warning, so one bad feed doesn't
 // take down the whole build.
 export async function fetchAggregatedPosts(
   source: NewsletterSource
-): Promise<Post[]> {
+): Promise<AggregatedFetchResult> {
   const feedUrl = `${source.url.replace(/\/$/, "")}/feed`;
 
   let xml: string;
@@ -377,7 +421,7 @@ export async function fetchAggregatedPosts(
         err instanceof Error ? err.message : err
       }`
     );
-    return [];
+    return { posts: [], turnAttachments: [] };
   }
 
   let parsed: { rss?: { channel?: { item?: RssItem | RssItem[] } } };
@@ -389,11 +433,12 @@ export async function fetchAggregatedPosts(
         err instanceof Error ? err.message : err
       }`
     );
-    return [];
+    return { posts: [], turnAttachments: [] };
   }
 
   const items = asArray(parsed?.rss?.channel?.item);
   const posts: Post[] = [];
+  const turnAttachments: TurnAttachment[] = [];
 
   // Split into marker-tagged items and everything else, preserving the feed's
   // own order (Substack feeds are newest-first).
@@ -423,13 +468,32 @@ export async function fetchAggregatedPosts(
     selectedItems = [];
   }
 
-  for (const item of selectedItems) {
+  // A [[TURN:slug]] item with no [[OOT]] never makes selectedItems above
+  // (it's not meant to join the main feed) but its content still needs
+  // computing -- union it in here, processed identically below, just kept
+  // out of `posts` at the end.
+  const turnTargetByItem = new Map<RssItem, string>();
+  for (const item of validItems) {
+    const target = extractTurnTarget(
+      textOf(item.title),
+      textOf(item.description),
+      textOf(item["content:encoded"])
+    );
+    if (target) turnTargetByItem.set(item, target);
+  }
+  const selectedSet = new Set(selectedItems);
+  const itemsToProcess = [
+    ...selectedItems,
+    ...validItems.filter((item) => turnTargetByItem.has(item) && !selectedSet.has(item)),
+  ];
+
+  for (const item of itemsToProcess) {
     const rawTitle = textOf(item.title);
     const rawDescription = textOf(item.description);
     const rawContent = textOf(item["content:encoded"]);
     const link = textOf(item.link);
 
-    const title = stripMarker(rawTitle);
+    const title = stripTurnMarker(stripMarker(rawTitle));
     const slug = slugFromLink(link);
     const date = toIsoDate(textOf(item.pubDate));
     const authorName = textOf(item["dc:creator"]) || source.authorName;
@@ -441,12 +505,12 @@ export async function fetchAggregatedPosts(
 
     // Sanitized HTML is what actually gets displayed, so formatting from
     // the original post (paragraphs, bold/italic, links, lists) survives.
-    // The [[OOT]] marker can appear anywhere a contributor puts it --
-    // title, subtitle, or the post body itself -- so it needs stripping
-    // from the raw content too, not just title/description, before it gets
+    // Either marker can appear anywhere a contributor puts it -- title,
+    // subtitle, or the post body itself -- so both need stripping from the
+    // raw content too, not just title/description, before it gets
     // sanitized and shown.
     const sanitizedHtml = rawContent
-      ? removeEmptyBlocks(sanitizeContentHtml(stripMarker(rawContent)))
+      ? removeEmptyBlocks(sanitizeContentHtml(stripTurnMarker(stripMarker(rawContent))))
       : "";
     const cleanedHtml = sanitizedHtml
       ? stripPaywallBoilerplateHtml(sanitizedHtml, bodyPlain)
@@ -456,7 +520,7 @@ export async function fetchAggregatedPosts(
     // the subtitle/description is plain text, not HTML, so it just gets
     // escaped and wrapped rather than run through the HTML sanitizer.
     const teaserHtml = rawDescription
-      ? `<p>${escapeHtml(stripMarker(rawDescription))}</p>`
+      ? `<p>${escapeHtml(stripTurnMarker(stripMarker(rawDescription)))}</p>`
       : "";
 
     const excerptSource = cleanedHtml || teaserHtml;
@@ -472,7 +536,7 @@ export async function fetchAggregatedPosts(
       new Set([...rssTags, ...(TAG_OVERRIDES[slug] ?? [])])
     );
 
-    posts.push({
+    const builtPost: Post = {
       slug,
       title,
       authorName,
@@ -486,10 +550,18 @@ export async function fetchAggregatedPosts(
       access: isPaid ? "paid" : "free",
       sourceUrl: link,
       permalink: `/read/${slug}`,
-    });
+    };
+
+    if (selectedSet.has(item)) {
+      posts.push(builtPost);
+    }
+    const targetSlug = turnTargetByItem.get(item);
+    if (targetSlug) {
+      turnAttachments.push({ targetSlug, sourcePost: builtPost });
+    }
   }
 
-  return posts;
+  return { posts, turnAttachments };
 }
 
 // Fetches every confirmed newsletter source in parallel. Individual source
@@ -497,7 +569,10 @@ export async function fetchAggregatedPosts(
 // whole build.
 export async function fetchAllAggregatedPosts(
   sources: NewsletterSource[]
-): Promise<Post[]> {
+): Promise<AggregatedFetchResult> {
   const results = await Promise.all(sources.map(fetchAggregatedPosts));
-  return results.flat();
+  return {
+    posts: results.flatMap((r) => r.posts),
+    turnAttachments: results.flatMap((r) => r.turnAttachments),
+  };
 }

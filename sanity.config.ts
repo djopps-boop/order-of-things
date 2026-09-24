@@ -4,6 +4,7 @@ import { visionTool } from "@sanity/vision";
 import { schemaTypes } from "./src/sanity/schemaTypes";
 import { projectId, dataset, apiVersion } from "./src/sanity/env";
 import { TakeATurnAction } from "./src/sanity/actions/takeATurn";
+import { StudioLayout } from "./src/sanity/StudioLayout";
 
 // Embedded at /studio. Won't actually connect to anything until projectId
 // and dataset are set to a real Sanity project (see src/sanity/env.ts) —
@@ -21,5 +22,13 @@ export default defineConfig({
     // own type check) -- registered for every type here rather than
     // filtered by schemaType so that check lives in exactly one place.
     actions: (prev) => [...prev, TakeATurnAction],
+  },
+  studio: {
+    // Mounts ContributorSessionBridge globally -- see that file's own
+    // comment for why the public site's "Take a Turn" button needs this
+    // rather than checking Sanity's own login session directly.
+    components: {
+      layout: StudioLayout,
+    },
   },
 });

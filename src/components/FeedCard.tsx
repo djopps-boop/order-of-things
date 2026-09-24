@@ -133,12 +133,11 @@ export default function FeedCard({ post }: { post: Post }) {
 
       {post.turns && post.turns.length > 0 && (
         <div className="feed-card-turns-indicator">
-          <span>↩</span>
-          <span>
-            {post.turns.length === 1 ? "1 turn" : `${post.turns.length} turns`}
-            {" · last from "}
-            {post.turns[post.turns.length - 1].authorName}
-            {", "}
+          <span className="turns-ribbon">
+            ↩ {post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}
+          </span>
+          <span className="feed-card-turns-meta">
+            last from {post.turns[post.turns.length - 1].authorName},{" "}
             {post.turns[post.turns.length - 1].date.slice(0, 10)}
           </span>
         </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import Comments from "@/components/Comments";
+import TakeATurnButton from "@/components/TakeATurnButton";
 
 export async function generateStaticParams() {
   const posts = await getAllPosts();
@@ -47,21 +48,37 @@ export default async function PostPage({
         </div>
       )}
 
+      {post.turns && post.turns.length > 0 && (
+        <div className="post-turns-jump">
+          <a href="#turns" className="turns-ribbon">
+            ↩ {post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}
+          </a>
+        </div>
+      )}
+
       <div
         className="post-body rich-text"
         dangerouslySetInnerHTML={{ __html: post.body ?? "" }}
       />
 
       {post.turns && post.turns.length > 0 && (
-        <section className="turns-section" aria-label="Turns">
+        <section className="turns-section" id="turns" aria-label="Turns">
           <div className="turns-head">
-            <span>↩</span>
-            <span>{post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}</span>
+            <span className="turns-ribbon">
+              ↩ {post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}
+            </span>
           </div>
           {post.turns.map((turn) => (
             <div key={turn.id} className="turn">
               <div className="turn-byline">
-                <Link href={`/author/${turn.authorSlug}`}>{turn.authorName}</Link>
+                {turn.isGuest && turn.guestCommentUrl ? (
+                  <a href={turn.guestCommentUrl} target="_blank" rel="noopener noreferrer">
+                    {turn.authorName}
+                  </a>
+                ) : (
+                  <Link href={`/author/${turn.authorSlug}`}>{turn.authorName}</Link>
+                )}
+                {turn.isGuest && <span className="turn-guest-tag">guest</span>}
                 <span>·</span>
                 <span>{turn.date.slice(0, 10)}</span>
               </div>
@@ -69,10 +86,23 @@ export default async function PostPage({
                 className="turn-body rich-text"
                 dangerouslySetInnerHTML={{ __html: turn.body }}
               />
+              {turn.authorReply && (
+                <div className="author-reply">
+                  <div className="author-reply-label">
+                    <span className="turns-ribbon">↩ {post.authorName} replied</span>
+                  </div>
+                  <div
+                    className="author-reply-body rich-text"
+                    dangerouslySetInnerHTML={{ __html: turn.authorReply }}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </section>
       )}
+
+      <TakeATurnButton postId={post.sanityId} />
 
       <footer className="post-footer">
         <Link href={`/author/${post.authorSlug}`}>
