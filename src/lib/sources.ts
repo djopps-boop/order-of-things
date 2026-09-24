@@ -67,6 +67,13 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://samkahn.substack.com",
   },
   {
+    authorName: "Naomi Kanakia",
+    authorSlug: "naomi-kanakia",
+    newsletterName: "Woman of Letters",
+    url: "https://www.woman-of-letters.com",
+    pronoun: "her",
+  },
+  {
     authorName: "Shreeharsh Kelkar",
     authorSlug: "shreeharsh-kelkar",
     newsletterName: "Technology and Society",
