@@ -233,6 +233,22 @@ function shouldExcludeFrame(frame: {
   return false;
 }
 
+// Substack's inline "tag a person" mentions render as a small avatar <img>
+// with no other visible text alongside it -- the tagged person's name lives
+// only in that image's alt attribute. Since <img> isn't in ALLOWED_TAGS and
+// has no child content of its own to fall back on, stripping it removed the
+// mention entirely, leaving a blank gap where the name had been (reported:
+// tagged names showing up as blank space in an aggregated post). Run before
+// sanitizing so the name survives as plain text instead of vanishing with
+// the image; images with no (or empty) alt -- ordinary content photos --
+// still disappear exactly as before.
+function restoreImageAltText(html: string): string {
+  return html.replace(/<img\b[^>]*>/gi, (tag) => {
+    const match = tag.match(/\balt\s*=\s*"([^"]*)"|\balt\s*=\s*'([^']*)'/i);
+    return (match?.[1] ?? match?.[2] ?? "").trim();
+  });
+}
+
 function sanitizeContentHtml(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: [...ALLOWED_TAGS, ...DROP_ENTIRELY_TAGS],
@@ -510,7 +526,9 @@ export async function fetchAggregatedPosts(
     // raw content too, not just title/description, before it gets
     // sanitized and shown.
     const sanitizedHtml = rawContent
-      ? removeEmptyBlocks(sanitizeContentHtml(stripTurnMarker(stripMarker(rawContent))))
+      ? removeEmptyBlocks(
+          sanitizeContentHtml(stripTurnMarker(stripMarker(restoreImageAltText(rawContent))))
+        )
       : "";
     const cleanedHtml = sanitizedHtml
       ? stripPaywallBoilerplateHtml(sanitizedHtml, bodyPlain)
