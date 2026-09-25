@@ -1,0 +1,58 @@
+name: Scheduled feed refresh
+
+# Triggers a fresh Cloudflare Pages build (which re-fetches every
+# contributor's Substack RSS feed and the GitHub Discussions comments --
+# both only run at build time, since this is a static export) every 3
+# hours between 7am and 10pm Eastern, and never overnight.
+#
+# GitHub Actions cron is UTC-only and does not shift for daylight saving,
+# so a fixed UTC cron would drift by an hour for ~8 months of the year.
+# Instead this runs on the hour, every hour, and the job itself checks the
+# real Eastern-time hour (America/New_York, DST-aware) before doing
+# anything -- outside the target hours it's a no-op, so it never pushes a
+# commit or costs a Cloudflare Pages build.
+on:
+  schedule:
+    - cron: "0 * * * *"
+  # Manual "Run workflow" button in the Actions tab, for an on-demand
+  # refresh regardless of time of day.
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  maybe-refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether to refresh
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger -- refreshing regardless of time of day."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour="$(TZ='America/New_York' date +%H)"
+          case "$hour" in
+            07|10|13|16|19|22)
+              echo "Eastern hour $hour is in the refresh window."
+              echo "proceed=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Eastern hour $hour is outside the refresh window -- skipping."
+              echo "proceed=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Checkout
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/checkout@v4
+
+      - name: Trigger a Cloudflare Pages rebuild
+        if: steps.gate.outputs.proceed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "Scheduled feed refresh ($(TZ='America/New_York' date '+%Y-%m-%d %I:%M %p %Z'))"
+          git push
