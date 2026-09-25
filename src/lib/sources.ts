@@ -40,6 +40,12 @@ export const newsletterSources: NewsletterSource[] = [
     url: "https://agoodhardstare.substack.com",
   },
   {
+    authorName: "William Deresiewicz",
+    authorSlug: "william-deresiewicz",
+    newsletterName: "Derisivist",
+    url: "https://deresiewicz.substack.com",
+  },
+  {
     authorName: "John Encaustum",
     authorSlug: "john-encaustum",
     newsletterName: "The Blackthorn Hedge",
