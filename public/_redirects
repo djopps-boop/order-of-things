@@ -1,0 +1,12 @@
+# The Studio catch-all route ("/studio/[[...tool]]") only prerenders the
+# bare /studio shell (see generateStaticParams in that route) -- Sanity
+# Studio's own client-side router handles everything under it once that
+# shell has loaded. A direct navigation to a deeper path, like the
+# "/studio/intent/edit/id=...;type=post" links the "Take a Turn" button
+# generates, has no matching static file on its own and 404s without this
+# rewrite. Serving the same prerendered shell for any /studio/* path (a
+# rewrite, not a redirect -- the 200 keeps the URL bar and the browser
+# history intact) lets Sanity's router read that path from the address
+# bar once it mounts and act on it, the same way it would for in-app
+# navigation to that URL.
+/studio/*  /studio.html  200
