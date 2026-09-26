@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { client } from "./client";
 import { writeClient } from "./writeClient";
 import { Post } from "@/lib/types";
+import { newsletterSources } from "@/lib/sources";
 
 // Stable across builds -- the whole point of keying by this instead of a
 // fresh ID each time is that createIfNotExists below is a genuine no-op on
@@ -14,12 +15,49 @@ export function idForSourceUrl(sourceUrl: string): string {
   return `aggregated-${createHash("sha1").update(sourceUrl).digest("hex").slice(0, 16)}`;
 }
 
-async function findAuthorIdBySlug(authorSlug: string): Promise<string | null> {
-  const result = await client.fetch<{ _id: string } | null>(
+// Stable across builds for the same reason idForSourceUrl above is --
+// createIfNotExists below only stays a genuine no-op if this doesn't
+// change from one build to the next.
+function idForAuthorSlug(authorSlug: string): string {
+  return `author-${authorSlug}`;
+}
+
+// A post can only be adopted once it has an author document to reference
+// (see the required `author` field on creation below) -- originally this
+// just looked one up and gave up if none existed yet, which meant a
+// contributor's posts silently never adopted (no "Take a Turn" button
+// anywhere, on the feed or their own post page) until someone went into
+// Studio and hand-created an Author document for them first. Every
+// contributor already has a name/slug/Substack URL in sources.ts (that's
+// how the RSS aggregator finds their feed in the first place), so this
+// auto-creates a minimal Author document from that instead of requiring
+// the manual step -- the same "lazily persist the first time something
+// needs it" pattern syncOrAdoptAggregatedPost below already uses for the
+// post itself. A contributor's own `email` field (used only by the "Take
+// a Turn" Studio action to match a logged-in user to their author doc --
+// see author.ts) is left unset either way; nothing here needs it, and
+// they can add it themselves in Studio whenever they want that action to
+// recognize their own login.
+async function findOrCreateAuthorIdBySlug(authorSlug: string): Promise<string | null> {
+  const existing = await client.fetch<{ _id: string } | null>(
     `*[_type == "author" && slug.current == $authorSlug][0]{ _id }`,
     { authorSlug }
   );
-  return result?._id ?? null;
+  if (existing?._id) return existing._id;
+
+  if (!writeClient) return null;
+  const source = newsletterSources.find((s) => s.authorSlug === authorSlug);
+  if (!source) return null;
+
+  const id = idForAuthorSlug(authorSlug);
+  await writeClient.createIfNotExists({
+    _id: id,
+    _type: "author",
+    name: source.authorName,
+    slug: { _type: "slug", current: source.authorSlug },
+    substackUrl: source.url,
+  });
+  return id;
 }
 
 // Gives an aggregated post a permanent Sanity identity the first time
@@ -35,20 +73,21 @@ async function findAuthorIdBySlug(authorSlug: string): Promise<string | null> {
 //
 // Returns null (never throws) if the write token isn't configured yet, if
 // sourcePost has no sourceUrl (shouldn't happen for anything actually
-// aggregated, but the type allows it), if no author document matches the
-// contributor's slug, or if anything about the write itself fails -- every
-// caller treats null as "keep treating this as ephemeral RSS content for
-// this build," exactly how it behaved before this feature existed.
+// aggregated, but the type allows it), if the contributor's slug matches
+// no entry in sources.ts at all (shouldn't happen either, for the same
+// reason), or if anything about the write itself fails -- every caller
+// treats null as "keep treating this as ephemeral RSS content for this
+// build," exactly how it behaved before this feature existed.
 export async function syncOrAdoptAggregatedPost(sourcePost: Post): Promise<Post | null> {
   if (!writeClient || !sourcePost.sourceUrl) return null;
 
   const id = idForSourceUrl(sourcePost.sourceUrl);
 
   try {
-    const authorId = await findAuthorIdBySlug(sourcePost.authorSlug);
+    const authorId = await findOrCreateAuthorIdBySlug(sourcePost.authorSlug);
     if (!authorId) {
       console.warn(
-        `[adopt] no author document matches slug "${sourcePost.authorSlug}" -- skipping adoption for "${sourcePost.title}"`
+        `[adopt] no author document (and no matching sources.ts entry to create one from) for slug "${sourcePost.authorSlug}" -- skipping adoption for "${sourcePost.title}"`
       );
       return null;
     }
