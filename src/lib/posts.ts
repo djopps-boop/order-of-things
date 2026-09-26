@@ -68,13 +68,19 @@ const FALLBACK_AGGREGATED_POST: Post = {
 // alongside native posts, distinguished by Post.source. This function is
 // where the two get reconciled every build: an already-adopted post whose
 // source is still live gets resynced (regardless of whether any turn
-// activity touches it this build); a [[TURN:slug]] pointing at a
-// not-yet-adopted post gets it adopted right now if that post is still
-// live in this build's RSS fetch; and every resolved attachment becomes a
-// real (if still build-computed, not Sanity-stored) Turn merged onto its
-// target. An attachment that resolves to nothing -- the target doesn't
-// exist as a native post, an adopted post, or a live RSS item -- gets
-// dropped with a console warning rather than failing the build.
+// activity touches it this build); every other post that's actually live
+// in the feed this build gets adopted too, so it has a Sanity identity to
+// show a "Take a Turn" button against even if nobody has turned on it yet
+// (adoption used to happen only when a [[TURN:slug]] pointed at a post,
+// which meant the button -- whose whole job is to let someone start that
+// first turn -- could never appear until one already existed); and every
+// resolved [[TURN:slug]] attachment becomes a real (if still
+// build-computed, not Sanity-stored) Turn merged onto its target, adopting
+// the target on the spot too if it's a turn-only post that isn't itself
+// live in the regular feed. An attachment that resolves to nothing -- the
+// target doesn't exist as a native post, an adopted post, or a live RSS
+// item -- gets dropped with a console warning rather than failing the
+// build.
 let cachedAllPosts: Promise<Post[]> | null = null;
 
 function loadAllPosts(): Promise<Post[]> {
@@ -118,13 +124,33 @@ function loadAllPosts(): Promise<Post[]> {
         );
       }
 
-      // Resolve every [[TURN:slug]] attachment against: a native post, an
-      // already-(re)synced adopted post, or -- first-time adoption -- a
-      // post that's still live in this build's RSS fetch but has no
-      // Sanity identity yet.
       const nativeBySlug = new Map(nativePosts.map((p) => [p.slug, p]));
       const adoptedBySlug = new Map(resolvedAdopted.map((p) => [p.slug, p]));
       const newlyAdopted: Post[] = [];
+
+      // Give every post that actually lands in the feed a permanent Sanity
+      // identity up front -- not just posts a turn happens to target --
+      // so the "Take a Turn" button (which needs that identity as its
+      // postId) can appear on any Substack-pulled post's own page, not
+      // only ones someone has already turned on. A no-op for a post
+      // that's already adopted (the resync loop above already handles
+      // those); still a no-op for everyone if the write client isn't
+      // configured (see writeClient.ts) -- same "stay ephemeral" fallback
+      // as before this loop existed.
+      for (const post of aggregatedFetch.posts) {
+        if (adoptedBySlug.has(post.slug)) continue;
+        const created = await syncOrAdoptAggregatedPost(post);
+        if (created) {
+          newlyAdopted.push(created);
+          adoptedBySlug.set(created.slug, created);
+        }
+      }
+
+      // Resolve every [[TURN:slug]] attachment against: a native post, an
+      // already-(re)synced or just-adopted post, or -- first-time
+      // adoption -- a turn-only post that's still live in this build's
+      // RSS fetch but isn't itself in the regular feed (so the loop above
+      // never reached it) and has no Sanity identity yet.
       const virtualTurnsBySanityId = new Map<string, Turn[]>();
 
       for (const attachment of aggregatedFetch.turnAttachments) {
