@@ -1039,12 +1039,35 @@ a.turns-ribbon:hover {
   background: var(--surface-warm);
 }
 
+/* Collapses to nothing (no margin, no gap) when empty -- an ordinary
+   reader on a post with no turns yet and no contributor CTA to show sees
+   no trace of this row at all. */
+.feed-card-turns-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.feed-card-turns-row:empty {
+  display: none;
+}
+
+/* Compact, inline sibling of the ribbon here rather than the standalone,
+   bottom-of-post placement .take-a-turn-button is otherwise styled for. */
+.feed-card-turns-row .take-a-turn-button {
+  margin-top: 0;
+  margin-left: auto;
+  padding: 4px 12px;
+  font-size: 12.5px;
+}
+
 .feed-card-turns-indicator {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 10px;
 }
 
 .feed-card-turns-meta {
