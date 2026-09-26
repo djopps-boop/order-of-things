@@ -233,6 +233,53 @@ function shouldExcludeFrame(frame: {
   return false;
 }
 
+// Minimal HTML entity decoder for pulling readable text back out of an
+// attribute value -- just enough to turn Substack's escaped JSON (numeric
+// entities for smart quotes/dashes, &quot; for the embedded quote marks)
+// back into valid JSON text. Order matters: &amp; must be decoded last, or
+// an entity produced by an earlier step (e.g. turning "&amp;quot;" into
+// "&quot;") would get wrongly decoded a second time.
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+// Substack's inline "@mention" of another person doesn't carry the name as
+// visible text at all -- in the raw RSS content:encoded, it's an empty
+//   <span class="mention-wrap" data-attrs="{&quot;name&quot;:&quot;Jane
+//   Doe&quot;,...}" data-component-name="MentionToDOM"></span>
+// meant to be hydrated into a real chip (avatar + link) by Substack's own
+// client-side JS on the live page -- which never runs against our static
+// export. Since the span has no child text of its own, sanitizing it away
+// (span isn't in ALLOWED_TAGS) took the name with it, leaving a blank gap
+// exactly where the mention had been. Pull the name out of data-attrs
+// before sanitizing so it survives as plain text; anything that doesn't
+// match this exact shape (or fails to parse) is left alone and disappears
+// the same way it did before this fix.
+function restoreMentionNames(html: string): string {
+  return html.replace(/<span\b([^>]*)>\s*<\/span>/gi, (full, attrs: string) => {
+    if (!/data-component-name="MentionToDOM"/i.test(attrs)) return full;
+    const match = attrs.match(/data-attrs="([^"]*)"/i);
+    if (!match) return full;
+    try {
+      const parsed = JSON.parse(decodeHtmlEntities(match[1])) as { name?: unknown };
+      if (typeof parsed.name === "string" && parsed.name.trim()) {
+        return escapeHtml(parsed.name.trim());
+      }
+    } catch {
+      // Malformed/unexpected data-attrs -- fall through and drop it like before.
+    }
+    return full;
+  });
+}
+
 function sanitizeContentHtml(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: [...ALLOWED_TAGS, ...DROP_ENTIRELY_TAGS],
@@ -510,7 +557,9 @@ export async function fetchAggregatedPosts(
     // raw content too, not just title/description, before it gets
     // sanitized and shown.
     const sanitizedHtml = rawContent
-      ? removeEmptyBlocks(sanitizeContentHtml(stripTurnMarker(stripMarker(rawContent))))
+      ? removeEmptyBlocks(
+          sanitizeContentHtml(stripTurnMarker(stripMarker(restoreMentionNames(rawContent))))
+        )
       : "";
     const cleanedHtml = sanitizedHtml
       ? stripPaywallBoilerplateHtml(sanitizedHtml, bodyPlain)
