@@ -132,27 +132,17 @@ export default function FeedCard({ post }: { post: Post }) {
         <span>{post.date}</span>
       </div>
 
-      {/* Wraps the turns count (when any exist) and the "Take a Turn" CTA
-          (when the viewer is a matched, logged-in contributor) in one row
-          near the top of the card -- so starting a turn is discoverable
-          right next to the count of turns already taken, not just on the
-          post's own page. Collapses to nothing (see globals.css's `:empty`
-          rule) for an ordinary reader on a post with no turns yet, since
-          neither child renders anything in that case. */}
-      <div className="feed-card-turns-row">
-        {post.turns && post.turns.length > 0 && (
-          <div className="feed-card-turns-indicator">
-            <span className="turns-ribbon">
-              ↩ {post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}
-            </span>
-            <span className="feed-card-turns-meta">
-              last from {post.turns[post.turns.length - 1].authorName},{" "}
-              {post.turns[post.turns.length - 1].date.slice(0, 10)}
-            </span>
-          </div>
-        )}
-        <TakeATurnButton postId={post.sanityId} />
-      </div>
+      {post.turns && post.turns.length > 0 && (
+        <div className="feed-card-turns-indicator">
+          <span className="turns-ribbon">
+            ↩ {post.turns.length === 1 ? "1 Turn" : `${post.turns.length} Turns`}
+          </span>
+          <span className="feed-card-turns-meta">
+            last from {post.turns[post.turns.length - 1].authorName},{" "}
+            {post.turns[post.turns.length - 1].date.slice(0, 10)}
+          </span>
+        </div>
+      )}
 
       {post.thumbnailUrl && (
         <img src={post.thumbnailUrl} alt="" className="feed-card-image" />
@@ -221,6 +211,7 @@ export default function FeedCard({ post }: { post: Post }) {
             Continue reading →
           </Link>
         )}
+        <TakeATurnButton postId={post.sanityId} />
       </div>
 
       <div className="post-actions">
